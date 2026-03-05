@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="80" fill="#0F0F1A"/>
+  <rect width="512" height="512" rx="80" fill="url(#grad)"/>
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1A1A2E"/>
+      <stop offset="100%" style="stop-color:#0F0F1A"/>
+    </linearGradient>
+  </defs>
+  <!-- Lens/scan icon -->
+  <circle cx="256" cy="240" r="100" fill="none" stroke="#7C3AED" stroke-width="20"/>
+  <circle cx="256" cy="240" r="60" fill="none" stroke="#A78BFA" stroke-width="12"/>
+  <circle cx="256" cy="240" r="24" fill="#7C3AED"/>
+  <!-- Corner brackets -->
+  <path d="M140 140 L140 100 L100 100" fill="none" stroke="#7C3AED" stroke-width="20" stroke-linecap="round"/>
+  <path d="M372 140 L372 100 L412 100" fill="none" stroke="#7C3AED" stroke-width="20" stroke-linecap="round"/>
+  <path d="M140 380 L140 412 L100 412" fill="none" stroke="#7C3AED" stroke-width="20" stroke-linecap="round"/>
+  <path d="M372 380 L372 412 L412 412" fill="none" stroke="#7C3AED" stroke-width="20" stroke-linecap="round"/>
+  <!-- Label -->
+  <text x="256" y="430" text-anchor="middle" font-family="system-ui,sans-serif" font-size="52" font-weight="700" fill="#A78BFA">NL</text>
+</svg>
