@@ -9,8 +9,7 @@ import { Card } from '@/components/ui/Card';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { useNutritionStore } from '@/store/nutritionStore';
 import { useGoalsStore } from '@/store/goalsStore';
-import { getMealsByDate, getAllBodyMeasurements } from '@/lib/db';
-import { sumEntries, todayString, lastNDays, formatDateDisplay, MACRO_COLORS } from '@/lib/nutritionCalc';
+import { todayString, lastNDays, formatDateDisplay, MACRO_COLORS } from '@/lib/nutritionCalc';
 import type { BodyMeasurement } from '@/types';
 
 interface WeekDay {
@@ -21,20 +20,23 @@ interface WeekDay {
 
 export default function DashboardPage() {
   const { entries, totals, loadDay } = useNutritionStore();
-  const { goals } = useGoalsStore();
+  const { goals, loadGoals } = useGoalsStore();
   const [weekData, setWeekData] = useState<WeekDay[]>([]);
   const [latestMeasurement, setLatestMeasurement] = useState<BodyMeasurement | null>(null);
   const today = todayString();
 
   useEffect(() => {
     loadDay(today);
-  }, [today, loadDay]);
+    loadGoals();
+  }, [today, loadDay, loadGoals]);
 
   // Load latest body measurement
   useEffect(() => {
-    getAllBodyMeasurements().then((all) => {
-      setLatestMeasurement(all.length > 0 ? all[all.length - 1] : null);
-    });
+    fetch('/api/body')
+      .then((r) => (r.ok ? r.json() : []))
+      .then((all: BodyMeasurement[]) => {
+        setLatestMeasurement(all.length > 0 ? all[all.length - 1] : null);
+      });
   }, []);
 
   // Load weekly data
@@ -43,12 +45,13 @@ export default function DashboardPage() {
       const days = lastNDays(7);
       const results = await Promise.all(
         days.map(async (date) => {
-          const dayEntries = await getMealsByDate(date);
-          const dayTotals = sumEntries(dayEntries);
+          const r = await fetch('/api/meals?date=' + date);
+          const raw: Array<{ calories: number }> = r.ok ? await r.json() : [];
+          const dayCalories = raw.reduce((acc, m) => acc + (Number(m.calories) || 0), 0);
           const d = new Date(date + 'T12:00:00');
           return {
             day: d.toLocaleDateString('en-US', { weekday: 'short' }),
-            calories: dayTotals.calories,
+            calories: dayCalories,
             isToday: date === today,
           };
         })

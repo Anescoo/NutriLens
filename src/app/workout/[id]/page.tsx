@@ -2,11 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import {
-  getWorkoutSession,
-  saveWorkoutSession,
-  getLastSessionForExercise,
-} from '@/lib/db';
+
 import type { WorkoutSession, WorkoutExercise, WorkoutSet } from '@/types';
 
 function formatDate(dateStr: string) {
@@ -258,15 +254,21 @@ export default function WorkoutSessionPage() {
 
   useEffect(() => {
     async function load() {
-      const s = await getWorkoutSession(id);
+      const res = await fetch('/api/workout/' + id);
+      if (!res.ok) { router.replace('/workout'); return; }
+      const s: WorkoutSession = await res.json();
       if (!s) { router.replace('/workout'); return; }
       setSession(s);
       latestRef.current = s;
 
+      const allRes = await fetch('/api/workout');
+      const allSessions: WorkoutSession[] = allRes.ok ? await allRes.json() : [];
       const map = new Map<string, WorkoutSession>();
       for (const ex of s.exercises) {
         if (!map.has(ex.name)) {
-          const prev = await getLastSessionForExercise(ex.name, id);
+          const prev = allSessions.find(
+            (ws) => ws.id !== id && ws.exercises.some((e) => e.name.toLowerCase() === ex.name.toLowerCase())
+          );
           if (prev) map.set(ex.name, prev);
         }
       }
@@ -285,8 +287,11 @@ export default function WorkoutSessionPage() {
       const exercises = prev.exercises.map((e, i) => (i === index ? updater(e) : e));
       const next = { ...prev, exercises };
       latestRef.current = next;
-      // Save immediately with the exact value we computed — no async chain needed
-      saveWorkoutSession(next);
+      fetch('/api/workout/' + id, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(next),
+      });
       return next;
     });
   }
@@ -296,7 +301,11 @@ export default function WorkoutSessionPage() {
     if (!current) return;
     setCompleting(true);
     const completed = { ...current, completedAt: Date.now() };
-    await saveWorkoutSession(completed);
+    await fetch('/api/workout/' + id, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(completed),
+    });
     router.push('/workout');
   }
 

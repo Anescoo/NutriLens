@@ -1,0 +1,84 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String?
+  createdAt DateTime @default(now())
+
+  mealEntries      MealEntry[]
+  bodyMeasurements BodyMeasurement[]
+  goals            UserGoals?
+  workoutSessions  WorkoutSession[]
+}
+
+model MealEntry {
+  id        String @id @default(cuid())
+  userId    String
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  date      String
+  mealType  String
+  name      String
+  calories  Float
+  protein   Float
+  carbs     Float
+  fat       Float
+  grams     Float
+  timestamp BigInt
+
+  @@index([userId, date])
+}
+
+model BodyMeasurement {
+  id         String  @id @default(cuid())
+  userId     String
+  user       User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  date       String
+  weight     Float
+  height     Float?
+  bodyFat    Float?
+  muscleMass Float?
+  waist      Float?
+  chest      Float?
+  leftArm    Float?
+  rightArm   Float?
+  notes      String?
+
+  @@index([userId])
+}
+
+model UserGoals {
+  id       String @id @default(cuid())
+  userId   String @unique
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  calories Float @default(2000)
+  protein  Float @default(100)
+  carbs    Float @default(250)
+  fat      Float @default(65)
+}
+
+model WorkoutSession {
+  id          String  @id @default(cuid())
+  userId      String
+  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name        String
+  date        String
+  exercises   String
+  completedAt BigInt?
+  notes       String?
+
+  @@index([userId])
+}

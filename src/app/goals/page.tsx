@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -72,9 +72,18 @@ function GoalInput({ label, value, unit, color, onChange, min = 0, max = 5000 }:
 }
 
 export default function GoalsPage() {
-  const { goals, setGoals } = useGoalsStore();
+  const { goals, setGoals, loadGoals } = useGoalsStore();
   const [localGoals, setLocalGoals] = useState<Goals>({ ...goals });
   const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    loadGoals();
+  }, [loadGoals]);
+
+  // Sync localGoals when goals are loaded from the API
+  useEffect(() => {
+    setLocalGoals({ ...goals });
+  }, [goals]);
 
   const applyPreset = (preset: GoalPreset) => {
     setLocalGoals(GOAL_PRESETS[preset]);
@@ -221,7 +230,7 @@ export default function GoalsPage() {
       </Button>
 
       <p className="text-center text-xs text-[#6B6B8A] mt-3">
-        Goals are stored locally on your device
+        Goals are synced to your account
       </p>
     </main>
   );

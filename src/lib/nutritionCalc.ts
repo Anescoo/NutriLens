@@ -4,7 +4,8 @@ import type { FoodItem, MealEntry, NutritionTotals } from '@/types';
  * Calculate macros for a given food at specified grams
  * Formula: macros_total = sum(macros_per100g * grams / 100)
  */
-export function calcMacros(food: FoodItem, grams: number): NutritionTotals {
+export function calcMacros(food: FoodItem | undefined | null, grams: number): NutritionTotals {
+  if (!food) return { calories: 0, protein: 0, carbs: 0, fat: 0 };
   const factor = grams / 100;
   return {
     calories: Math.round(food.calories * factor),

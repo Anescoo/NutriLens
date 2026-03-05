@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { signOut } from 'next-auth/react';
 
 const tabs = [
   {
@@ -117,6 +118,21 @@ export function BottomNav() {
               </Link>
             );
           })}
+
+          {/* Logout */}
+          <button
+            onClick={() => signOut({ callbackUrl: '/login' })}
+            className="flex flex-col items-center gap-1 py-3 px-2 rounded-xl transition-all duration-200 min-w-[52px] text-[#6B6B8A] hover:text-red-400"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
+            </svg>
+            <span className="text-[10px] font-semibold tracking-wide" style={{ letterSpacing: '0.05em' }}>
+              Sortir
+            </span>
+          </button>
         </div>
       </div>
     </nav>

@@ -5,7 +5,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, ReferenceLine, Area, AreaChart,
 } from 'recharts';
-import { getAllBodyMeasurements, saveBodyMeasurement, deleteBodyMeasurement } from '@/lib/db';
+
 import type { BodyMeasurement } from '@/types';
 
 function uid() {
@@ -186,10 +186,12 @@ export default function BodyPage() {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState<FormState>(emptyForm());
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
   const [activeChart, setActiveChart] = useState<'weight' | 'bodyFat' | 'waist'>('weight');
 
   const load = useCallback(async () => {
-    setMeasurements(await getAllBodyMeasurements());
+    const r = await fetch('/api/body');
+    if (r.ok) setMeasurements(await r.json());
   }, []);
 
   useEffect(() => { load(); }, [load]);
@@ -210,19 +212,30 @@ export default function BodyPage() {
     const w = parseFloat(form.weight);
     if (isNaN(w) || w <= 0) return;
     setSaving(true);
-    await saveBodyMeasurement({
-      id: uid(),
-      date: form.date,
-      weight: w,
-      height: form.height ? parseFloat(form.height) : undefined,
-      bodyFat: form.bodyFat ? parseFloat(form.bodyFat) : undefined,
-      muscleMass: form.muscleMass ? parseFloat(form.muscleMass) : undefined,
-      waist: form.waist ? parseFloat(form.waist) : undefined,
-      chest: form.chest ? parseFloat(form.chest) : undefined,
-      leftArm: form.leftArm ? parseFloat(form.leftArm) : undefined,
-      rightArm: form.rightArm ? parseFloat(form.rightArm) : undefined,
-      notes: form.notes || undefined,
+    setSaveError('');
+    const res = await fetch('/api/body', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: uid(),
+        date: form.date,
+        weight: w,
+        height: form.height ? parseFloat(form.height) : undefined,
+        bodyFat: form.bodyFat ? parseFloat(form.bodyFat) : undefined,
+        muscleMass: form.muscleMass ? parseFloat(form.muscleMass) : undefined,
+        waist: form.waist ? parseFloat(form.waist) : undefined,
+        chest: form.chest ? parseFloat(form.chest) : undefined,
+        leftArm: form.leftArm ? parseFloat(form.leftArm) : undefined,
+        rightArm: form.rightArm ? parseFloat(form.rightArm) : undefined,
+        notes: form.notes || undefined,
+      }),
     });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      setSaveError(err.error || `Erreur ${res.status}`);
+      setSaving(false);
+      return;
+    }
     await load();
     setForm(emptyForm());
     setShowForm(false);
@@ -393,7 +406,7 @@ export default function BodyPage() {
                       {m.notes && <p className="text-xs text-[#6B6B8A] italic mt-0.5">{m.notes}</p>}
                     </div>
                     <button
-                      onClick={() => deleteBodyMeasurement(m.id).then(load)}
+                      onClick={() => fetch('/api/body/' + m.id, { method: 'DELETE' }).then(load)}
                       className="p-1.5 text-[#6B6B8A] hover:text-red-400 transition-colors"
                     >
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
@@ -511,6 +524,11 @@ export default function BodyPage() {
                 />
               </div>
 
+              {saveError && (
+                <div className="mb-3 bg-red-500/10 border border-red-500/30 rounded-xl px-3 py-2 text-red-400 text-sm">
+                  {saveError}
+                </div>
+              )}
               <button
                 onClick={handleSave}
                 disabled={saving || !form.weight}

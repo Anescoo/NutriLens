@@ -1,12 +1,5 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 import type { Goals } from '@/types';
-
-interface GoalsState {
-  goals: Goals;
-  setGoals: (goals: Goals) => void;
-  resetGoals: () => void;
-}
 
 const DEFAULT_GOALS: Goals = {
   calories: 2000,
@@ -15,15 +8,48 @@ const DEFAULT_GOALS: Goals = {
   fat: 65,
 };
 
-export const useGoalsStore = create<GoalsState>()(
-  persist(
-    (set) => ({
-      goals: DEFAULT_GOALS,
-      setGoals: (goals) => set({ goals }),
-      resetGoals: () => set({ goals: DEFAULT_GOALS }),
-    }),
-    {
-      name: 'nutrilens-goals',
+interface GoalsState {
+  goals: Goals;
+  isLoading: boolean;
+  loadGoals: () => Promise<void>;
+  setGoals: (goals: Goals) => Promise<void>;
+  resetGoals: () => Promise<void>;
+}
+
+export const useGoalsStore = create<GoalsState>()((set) => ({
+  goals: DEFAULT_GOALS,
+  isLoading: false,
+
+  loadGoals: async () => {
+    set({ isLoading: true });
+    try {
+      const res = await fetch('/api/goals');
+      if (res.ok) {
+        const data = await res.json();
+        set({ goals: { calories: data.calories, protein: data.protein, carbs: data.carbs, fat: data.fat } });
+      }
+    } catch {
+      // keep defaults
+    } finally {
+      set({ isLoading: false });
     }
-  )
-);
+  },
+
+  setGoals: async (goals: Goals) => {
+    set({ goals });
+    await fetch('/api/goals', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(goals),
+    });
+  },
+
+  resetGoals: async () => {
+    set({ goals: DEFAULT_GOALS });
+    await fetch('/api/goals', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(DEFAULT_GOALS),
+    });
+  },
+}));

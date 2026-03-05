@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { getAllWorkoutSessions, deleteWorkoutSession } from '@/lib/db';
+
 import type { WorkoutSession } from '@/types';
 
 function formatDate(dateStr: string): string {
@@ -103,14 +103,13 @@ export default function WorkoutPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getAllWorkoutSessions().then((s) => {
-      setSessions(s);
-      setLoading(false);
-    });
+    fetch('/api/workout')
+      .then((r) => r.json())
+      .then((s) => { setSessions(s); setLoading(false); });
   }, []);
 
   async function handleDelete(id: string) {
-    await deleteWorkoutSession(id);
+    await fetch('/api/workout/' + id, { method: 'DELETE' });
     setSessions((prev) => prev.filter((s) => s.id !== id));
   }
 

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { saveWorkoutSession, getAllWorkoutSessions } from '@/lib/db';
+
 import type { WorkoutSession, WorkoutExercise, WorkoutSet, GroupType } from '@/types';
 
 function formatDate(dateStr: string) {
@@ -260,7 +260,7 @@ export default function NewWorkoutPage() {
   const [copyWeights, setCopyWeights] = useState(false);
 
   useEffect(() => {
-    getAllWorkoutSessions().then(setPastSessions);
+    fetch('/api/workout').then((r) => r.json()).then(setPastSessions);
   }, []);
 
   function updateExercise(index: number, updated: BuilderExercise) {
@@ -362,7 +362,11 @@ export default function NewWorkoutPage() {
       exercises: workoutExercises,
     };
 
-    await saveWorkoutSession(session);
+    await fetch('/api/workout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(session),
+    });
     router.push(`/workout/${session.id}`);
   }
 
