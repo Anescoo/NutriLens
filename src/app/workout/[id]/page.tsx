@@ -17,12 +17,14 @@ function SetRow({
   index,
   lastWeight,
   lastReps,
+  bodyweight,
   onChange,
 }: {
   set: WorkoutSet;
   index: number;
   lastWeight?: string | null;
   lastReps?: string | null;
+  bodyweight?: boolean;
   onChange: (updated: WorkoutSet) => void;
 }) {
   const hint =
@@ -49,14 +51,20 @@ function SetRow({
 
       {/* Weight — accepts "80" or "80-60-50" for drop sets */}
       <div className="flex items-center gap-1 flex-1">
-        <input
-          type="text"
-          inputMode="text"
-          value={set.weight != null ? String(set.weight) : ''}
-          onChange={(e) => onChange({ ...set, weight: e.target.value || null })}
-          placeholder={hint ? (lastWeight ?? '') : '80-60'}
-          className="w-full bg-transparent border border-[#2d1f5e] rounded-lg px-2 py-1.5 text-white text-sm text-center focus:outline-none focus:border-[#7C3AED] placeholder-[#3a3a5c]"
-        />
+        {bodyweight ? (
+          <div className="w-full border border-[#2d1f5e] rounded-lg px-2 py-1.5 text-[#A78BFA] text-sm text-center bg-transparent select-none">
+            À vide
+          </div>
+        ) : (
+          <input
+            type="text"
+            inputMode="text"
+            value={set.weight != null ? String(set.weight) : ''}
+            onChange={(e) => onChange({ ...set, weight: e.target.value || null })}
+            placeholder={hint ? (lastWeight ?? '') : ''}
+            className="w-full bg-transparent border border-[#2d1f5e] rounded-lg px-2 py-1.5 text-white text-sm text-center focus:outline-none focus:border-[#7C3AED] placeholder-[#3a3a5c]"
+          />
+        )}
         <span className="text-[#6B6B8A] text-xs shrink-0">kg</span>
       </div>
 
@@ -65,12 +73,13 @@ function SetRow({
       {/* Reps */}
       <div className="flex items-center gap-1 flex-1">
         <input
-          type="text"
-          inputMode="text"
+          type="number"
+          inputMode="numeric"
+          min={0}
           value={set.reps != null ? String(set.reps) : ''}
-          onChange={(e) => onChange({ ...set, reps: e.target.value || null })}
-          placeholder={hint ? (lastReps ?? '') : '10-8'}
-          className="w-full bg-transparent border border-[#2d1f5e] rounded-lg px-2 py-1.5 text-white text-sm text-center focus:outline-none focus:border-[#7C3AED] placeholder-[#3a3a5c]"
+          onChange={(e) => { const v = e.target.value.replace(/\D/g, ''); onChange({ ...set, reps: v || null }); }}
+          placeholder={hint ? (lastReps ?? '') : ''}
+          className="w-full bg-transparent border border-[#2d1f5e] rounded-lg px-2 py-1.5 text-white text-sm text-center focus:outline-none focus:border-[#7C3AED] placeholder-[#3a3a5c] [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
         />
         <span className="text-[#6B6B8A] text-xs shrink-0">rép</span>
       </div>
@@ -102,6 +111,10 @@ function ExerciseBlock({
   // Receives a transform so the page can merge against the *latest* prev state
   onChange: (updater: (ex: WorkoutExercise) => WorkoutExercise) => void;
 }) {
+  const [bodyweight, setBodyweight] = useState(() =>
+    exercise.sets.some((s) => s.weight === 'À vide')
+  );
+
   const prevExercise = prevSession?.exercises.find(
     (e) => e.name.toLowerCase() === exercise.name.toLowerCase()
   );
@@ -155,9 +168,31 @@ function ExerciseBlock({
               )}
               <h3 className="text-white font-bold truncate">{exercise.name}</h3>
             </div>
-            <span className="text-xs text-[#6B6B8A] shrink-0">
-              {doneSets}/{totalSets} séries
-            </span>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={() => {
+                  const next = !bodyweight;
+                  setBodyweight(next);
+                  onChange((ex) => ({
+                    ...ex,
+                    sets: ex.sets.map((s) => ({
+                      ...s,
+                      weight: next ? 'À vide' : (s.weight === 'À vide' ? null : s.weight),
+                    })),
+                  }));
+                }}
+                className={`text-[10px] px-2 py-0.5 rounded-full border transition-colors ${
+                  bodyweight
+                    ? 'bg-[#A78BFA]/20 border-[#A78BFA]/50 text-[#A78BFA]'
+                    : 'border-[#2d1f5e] text-[#6B6B8A] hover:border-[#A78BFA]/40 hover:text-[#A78BFA]'
+                }`}
+              >
+                À vide
+              </button>
+              <span className="text-xs text-[#6B6B8A]">
+                {doneSets}/{totalSets} séries
+              </span>
+            </div>
           </div>
           {prevExercise && (
             <p className="text-[11px] text-[#6B6B8A] mt-1">
@@ -212,6 +247,7 @@ function ExerciseBlock({
                   index={gi}
                   lastWeight={prevExercise?.sets[group.mainIdx]?.weight}
                   lastReps={prevExercise?.sets[group.mainIdx]?.reps}
+                  bodyweight={bodyweight}
                   onChange={(updated) => updateSet(group.mainIdx, updated)}
                 />
                 {group.dropIdxs.length > 0 && (
@@ -223,6 +259,7 @@ function ExerciseBlock({
                         index={di}
                         lastWeight={prevExercise?.sets[dropIdx]?.weight}
                         lastReps={prevExercise?.sets[dropIdx]?.reps}
+                        bodyweight={bodyweight}
                         onChange={(updated) => updateSet(dropIdx, updated)}
                       />
                     ))}

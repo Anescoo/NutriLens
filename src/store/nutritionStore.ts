@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { MealEntry, MealType, NutritionTotals } from '@/types';
 import { sumEntries, todayString } from '@/lib/nutritionCalc';
+import { randomId } from '@/lib/uuid';
 
 // ─── API helpers ─────────────────────────────────────────────────────────────
 
@@ -99,7 +100,7 @@ export function createMealEntry(
   date?: string
 ): MealEntry {
   return {
-    id: crypto.randomUUID(),
+    id: randomId(),
     foodItem,
     grams,
     mealType,

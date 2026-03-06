@@ -445,23 +445,21 @@ export default function BodyPage() {
         </div>
       )}
 
-      {/* Add form modal */}
+      {/* Add form — full screen */}
       {showForm && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end">
-          <div className="w-full bg-[#1A1A2E] border-t border-[#2d1f5e] rounded-t-3xl max-h-[92vh] overflow-y-auto">
-            {/* Handle */}
-            <div className="flex justify-center pt-3 pb-1">
-              <div className="w-10 h-1 rounded-full bg-[#2d1f5e]" />
-            </div>
-
-            <div className="px-5 pb-8">
-              <div className="flex items-center justify-between mb-5">
-                <h2 className="text-base font-bold text-white">Nouvelle mesure</h2>
-                <button onClick={() => setShowForm(false)} className="text-[#6B6B8A] hover:text-white p-1 transition-colors">
+        <div className="fixed inset-0 z-[100] bg-[#0F0F1A] flex flex-col">
+          <div className="flex-1 overflow-y-auto">
+            <div className="max-w-lg mx-auto px-4 pt-12 pb-8">
+              <div className="flex items-center gap-3 mb-6">
+                <button
+                  onClick={() => setShowForm(false)}
+                  className="w-9 h-9 rounded-xl bg-[#1A1A2E] border border-[#2d1f5e] flex items-center justify-center text-[#A78BFA] shrink-0"
+                >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
-                    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                    <polyline points="15 18 9 12 15 6" />
                   </svg>
                 </button>
+                <h2 className="text-lg font-bold text-white">Nouvelle mesure</h2>
               </div>
 
               <div className="mb-4">
@@ -476,9 +474,9 @@ export default function BodyPage() {
               {/* Section: essentials */}
               <p className="text-[10px] text-[#6B6B8A] uppercase tracking-widest mb-2">Essentiels</p>
               <div className="grid grid-cols-2 gap-3 mb-4">
-                <NumberField label="Poids (kg) *" value={form.weight} onChange={(v) => setForm((f) => ({ ...f, weight: v }))} placeholder="75.0" step="0.1" />
-                <NumberField label="Taille (cm)" value={form.height} onChange={(v) => setForm((f) => ({ ...f, height: v }))} placeholder="175" step="1" />
-                <NumberField label="Masse grasse (%)" value={form.bodyFat} onChange={(v) => setForm((f) => ({ ...f, bodyFat: v }))} placeholder="15.0" step="0.1" />
+                <NumberField label="Poids (kg) *" value={form.weight} onChange={(v) => setForm((f) => ({ ...f, weight: v }))} placeholder={latest ? latest.weight.toFixed(1) : '75.0'} step="0.1" />
+                <NumberField label="Taille (cm)" value={form.height} onChange={(v) => setForm((f) => ({ ...f, height: v }))} placeholder={latestHeight ? String(latestHeight) : '175'} step="1" />
+                <NumberField label="Masse grasse (%)" value={form.bodyFat} onChange={(v) => setForm((f) => ({ ...f, bodyFat: v }))} placeholder={latest?.bodyFat != null ? latest.bodyFat.toFixed(1) : '15.0'} step="0.1" />
               </div>
 
               {/* Muscle mass with auto toggle */}
@@ -507,10 +505,10 @@ export default function BodyPage() {
               {/* Section: circumferences */}
               <p className="text-[10px] text-[#6B6B8A] uppercase tracking-widest mb-2">Mensurations (cm)</p>
               <div className="grid grid-cols-2 gap-3 mb-4">
-                <NumberField label="Tour de taille" value={form.waist} onChange={(v) => setForm((f) => ({ ...f, waist: v }))} placeholder="80" />
-                <NumberField label="Tour de poitrine" value={form.chest} onChange={(v) => setForm((f) => ({ ...f, chest: v }))} placeholder="95" />
-                <NumberField label="Bras gauche" value={form.leftArm} onChange={(v) => setForm((f) => ({ ...f, leftArm: v }))} placeholder="35" />
-                <NumberField label="Bras droit" value={form.rightArm} onChange={(v) => setForm((f) => ({ ...f, rightArm: v }))} placeholder="35" />
+                <NumberField label="Tour de taille" value={form.waist} onChange={(v) => setForm((f) => ({ ...f, waist: v }))} placeholder={latest?.waist != null ? String(latest.waist) : '80'} />
+                <NumberField label="Tour de poitrine" value={form.chest} onChange={(v) => setForm((f) => ({ ...f, chest: v }))} placeholder={latest?.chest != null ? String(latest.chest) : '95'} />
+                <NumberField label="Bras gauche" value={form.leftArm} onChange={(v) => setForm((f) => ({ ...f, leftArm: v }))} placeholder={latest?.leftArm != null ? String(latest.leftArm) : '35'} />
+                <NumberField label="Bras droit" value={form.rightArm} onChange={(v) => setForm((f) => ({ ...f, rightArm: v }))} placeholder={latest?.rightArm != null ? String(latest.rightArm) : '35'} />
               </div>
 
               <div className="mb-6">

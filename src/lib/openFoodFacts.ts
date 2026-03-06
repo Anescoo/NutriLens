@@ -1,4 +1,5 @@
 import type { FoodItem } from '@/types';
+import { randomId } from '@/lib/uuid';
 
 const OFF_BASE = 'https://world.openfoodfacts.org';
 
@@ -51,7 +52,7 @@ export async function searchFood(query: string): Promise<FoodItem | null> {
       fat !== undefined
     ) {
       return {
-        id: crypto.randomUUID(),
+        id: randomId(),
         name: product.product_name || query,
         calories: Math.round(calories),
         protein: Math.round(protein * 10) / 10,
@@ -98,7 +99,7 @@ export function estimateNutrition(foodName: string): FoodItem {
   for (const estimate of estimates) {
     if (estimate.keywords.some((kw) => name.includes(kw))) {
       return {
-        id: crypto.randomUUID(),
+        id: randomId(),
         name: foodName,
         ...estimate.data,
         source: 'estimate',
@@ -108,7 +109,7 @@ export function estimateNutrition(foodName: string): FoodItem {
 
   // Generic fallback
   return {
-    id: crypto.randomUUID(),
+    id: randomId(),
     name: foodName,
     calories: 150,
     protein: 8,

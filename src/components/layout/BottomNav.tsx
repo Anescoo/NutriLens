@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { signOut, useSession } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
 
 const tabs = [
   {
@@ -14,20 +14,6 @@ const tabs = [
         <rect x="14" y="3" width="7" height="7" rx="1.5" />
         <rect x="3" y="14" width="7" height="7" rx="1.5" />
         <rect x="14" y="14" width="7" height="7" rx="1.5" />
-      </svg>
-    ),
-  },
-  {
-    href: '/scan',
-    label: 'Scan',
-    icon: (active: boolean) => (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active ? 2.2 : 1.8} strokeLinecap="round" strokeLinejoin="round">
-        <path d="M3 7V5a2 2 0 0 1 2-2h2" />
-        <path d="M17 3h2a2 2 0 0 1 2 2v2" />
-        <path d="M21 17v2a2 2 0 0 1-2 2h-2" />
-        <path d="M7 21H5a2 2 0 0 1-2-2v-2" />
-        <circle cx="12" cy="12" r="4" />
-        <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none" />
       </svg>
     ),
   },
@@ -80,6 +66,16 @@ const tabs = [
       </svg>
     ),
   },
+  {
+    href: '/profile',
+    label: 'Profil',
+    icon: (active: boolean) => (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active ? 2.2 : 1.8} strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="8" r="4" />
+        <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+      </svg>
+    ),
+  },
 ];
 
 export function BottomNav() {
@@ -123,20 +119,6 @@ export function BottomNav() {
             );
           })}
 
-          {/* Logout */}
-          <button
-            onClick={() => signOut({ callbackUrl: '/login' })}
-            className="flex flex-col items-center gap-1 py-3 px-2 rounded-xl transition-all duration-200 min-w-[52px] text-[#6B6B8A] hover:text-red-400"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-              <polyline points="16 17 21 12 16 7" />
-              <line x1="21" y1="12" x2="9" y2="12" />
-            </svg>
-            <span className="text-[10px] font-semibold tracking-wide" style={{ letterSpacing: '0.05em' }}>
-              Sortir
-            </span>
-          </button>
         </div>
       </div>
     </nav>
