@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { signOut } from 'next-auth/react';
+import { signOut, useSession } from 'next-auth/react';
 
 const tabs = [
   {
@@ -84,6 +84,10 @@ const tabs = [
 
 export function BottomNav() {
   const pathname = usePathname();
+  const { data: session, status } = useSession();
+
+  if (status === 'loading') return null;
+  if (!session || pathname === '/login' || pathname === '/signup') return null;
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 pb-[env(safe-area-inset-bottom)]">

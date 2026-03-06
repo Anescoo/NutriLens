@@ -54,9 +54,11 @@ export default function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <ServiceWorkerRegistrar />
-        {children}
-        <BottomNav />
+        <SessionProvider>
+          <ServiceWorkerRegistrar />
+          {children}
+          <BottomNav />
+        </SessionProvider>
       </body>
     </html>
   );

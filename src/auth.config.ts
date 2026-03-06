@@ -8,8 +8,8 @@ export const authConfig = {
       if (user) token.id = user.id;
       return token;
     },
-    session({ session, token }: { session: { user: Record<string, unknown> }; token: Record<string, unknown> }) {
-      if (token.id) session.user.id = token.id as string;
+    session({ session, token }) {
+      if (token.id) (session.user as unknown as Record<string, unknown>).id = token.id as string;
       return session;
     },
   },
