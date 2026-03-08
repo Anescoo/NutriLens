@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter, useParams, useSearchParams } from 'next/navigation';
 
 import type { WorkoutSession, WorkoutExercise, WorkoutSet } from '@/types';
 
@@ -18,6 +18,7 @@ function SetRow({
   lastWeight,
   lastReps,
   bodyweight,
+  readOnly,
   onChange,
 }: {
   set: WorkoutSet;
@@ -25,6 +26,7 @@ function SetRow({
   lastWeight?: string | null;
   lastReps?: string | null;
   bodyweight?: boolean;
+  readOnly?: boolean;
   onChange: (updated: WorkoutSet) => void;
 }) {
   const hint =
@@ -58,11 +60,23 @@ function SetRow({
         ) : (
           <input
             type="text"
-            inputMode="text"
+            inputMode={readOnly ? 'none' : 'decimal'}
+            readOnly={readOnly}
             value={set.weight != null ? String(set.weight) : ''}
-            onChange={(e) => onChange({ ...set, weight: e.target.value || null })}
+            onKeyDown={(e) => {
+              if (readOnly) return;
+              const allowed = ['0','1','2','3','4','5','6','7','8','9','.', '-','Backspace','Delete','ArrowLeft','ArrowRight','Tab'];
+              if (!allowed.includes(e.key) && !e.metaKey && !e.ctrlKey) e.preventDefault();
+            }}
+            onChange={(e) => {
+              if (readOnly) return;
+              const v = e.target.value.replace(/[^0-9.\-]/g, '');
+              onChange({ ...set, weight: v || null });
+            }}
             placeholder={hint ? (lastWeight ?? '') : ''}
-            className="w-full bg-transparent border border-[#2d1f5e] rounded-lg px-2 py-1.5 text-white text-sm text-center focus:outline-none focus:border-[#7C3AED] placeholder-[#3a3a5c]"
+            className={`w-full bg-transparent border border-[#2d1f5e] rounded-lg px-2 py-1.5 text-white text-sm text-center placeholder-[#3a3a5c] ${
+              readOnly ? 'cursor-default select-none focus:outline-none' : 'focus:outline-none focus:border-[#7C3AED]'
+            }`}
           />
         )}
         <span className="text-[#6B6B8A] text-xs shrink-0">kg</span>
@@ -73,25 +87,32 @@ function SetRow({
       {/* Reps */}
       <div className="flex items-center gap-1 flex-1">
         <input
-          type="number"
-          inputMode="numeric"
-          min={0}
+          type="text"
+          inputMode={readOnly ? 'none' : 'numeric'}
+          readOnly={readOnly}
           value={set.reps != null ? String(set.reps) : ''}
-          onChange={(e) => { const v = e.target.value.replace(/\D/g, ''); onChange({ ...set, reps: v || null }); }}
+          onKeyDown={(e) => {
+            if (readOnly) return;
+            const allowed = ['0','1','2','3','4','5','6','7','8','9','Backspace','Delete','ArrowLeft','ArrowRight','Tab'];
+            if (!allowed.includes(e.key) && !e.metaKey && !e.ctrlKey) e.preventDefault();
+          }}
+          onChange={(e) => { if (readOnly) return; const v = e.target.value.replace(/\D/g, ''); onChange({ ...set, reps: v || null }); }}
           placeholder={hint ? (lastReps ?? '') : ''}
-          className="w-full bg-transparent border border-[#2d1f5e] rounded-lg px-2 py-1.5 text-white text-sm text-center focus:outline-none focus:border-[#7C3AED] placeholder-[#3a3a5c] [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+          className={`w-full bg-transparent border border-[#2d1f5e] rounded-lg px-2 py-1.5 text-white text-sm text-center placeholder-[#3a3a5c] ${
+            readOnly ? 'cursor-default select-none focus:outline-none' : 'focus:outline-none focus:border-[#7C3AED]'
+          }`}
         />
         <span className="text-[#6B6B8A] text-xs shrink-0">rép</span>
       </div>
 
       {/* Done checkbox */}
       <button
-        onClick={() => onChange({ ...set, done: !set.done })}
+        onClick={() => !readOnly && onChange({ ...set, done: !set.done })}
         className={`w-7 h-7 rounded-lg border-2 flex items-center justify-center shrink-0 transition-all ${
           set.done
             ? 'bg-emerald-500 border-emerald-500 text-white'
             : 'border-[#2d1f5e] text-transparent hover:border-[#7C3AED]'
-        }`}
+        } ${readOnly ? 'pointer-events-none' : ''}`}
       >
         ✓
       </button>
@@ -104,10 +125,12 @@ function SetRow({
 function ExerciseBlock({
   exercise,
   prevSession,
+  readOnly,
   onChange,
 }: {
   exercise: WorkoutExercise;
   prevSession?: WorkoutSession;
+  readOnly?: boolean;
   // Receives a transform so the page can merge against the *latest* prev state
   onChange: (updater: (ex: WorkoutExercise) => WorkoutExercise) => void;
 }) {
@@ -169,26 +192,28 @@ function ExerciseBlock({
               <h3 className="text-white font-bold truncate">{exercise.name}</h3>
             </div>
             <div className="flex items-center gap-2 shrink-0">
-              <button
-                onClick={() => {
-                  const next = !bodyweight;
-                  setBodyweight(next);
-                  onChange((ex) => ({
-                    ...ex,
-                    sets: ex.sets.map((s) => ({
-                      ...s,
-                      weight: next ? 'À vide' : (s.weight === 'À vide' ? null : s.weight),
-                    })),
-                  }));
-                }}
-                className={`text-[10px] px-2 py-0.5 rounded-full border transition-colors ${
-                  bodyweight
-                    ? 'bg-[#A78BFA]/20 border-[#A78BFA]/50 text-[#A78BFA]'
-                    : 'border-[#2d1f5e] text-[#6B6B8A] hover:border-[#A78BFA]/40 hover:text-[#A78BFA]'
-                }`}
-              >
-                À vide
-              </button>
+              {!readOnly && (
+                <button
+                  onClick={() => {
+                    const next = !bodyweight;
+                    setBodyweight(next);
+                    onChange((ex) => ({
+                      ...ex,
+                      sets: ex.sets.map((s) => ({
+                        ...s,
+                        weight: next ? 'À vide' : (s.weight === 'À vide' ? null : s.weight),
+                      })),
+                    }));
+                  }}
+                  className={`text-[10px] px-2 py-0.5 rounded-full border transition-colors ${
+                    bodyweight
+                      ? 'bg-[#A78BFA]/20 border-[#A78BFA]/50 text-[#A78BFA]'
+                      : 'border-[#2d1f5e] text-[#6B6B8A] hover:border-[#A78BFA]/40 hover:text-[#A78BFA]'
+                  }`}
+                >
+                  À vide
+                </button>
+              )}
               <span className="text-xs text-[#6B6B8A]">
                 {doneSets}/{totalSets} séries
               </span>
@@ -248,6 +273,7 @@ function ExerciseBlock({
                   lastWeight={prevExercise?.sets[group.mainIdx]?.weight}
                   lastReps={prevExercise?.sets[group.mainIdx]?.reps}
                   bodyweight={bodyweight}
+                  readOnly={readOnly}
                   onChange={(updated) => updateSet(group.mainIdx, updated)}
                 />
                 {group.dropIdxs.length > 0 && (
@@ -260,6 +286,7 @@ function ExerciseBlock({
                         lastWeight={prevExercise?.sets[dropIdx]?.weight}
                         lastReps={prevExercise?.sets[dropIdx]?.reps}
                         bodyweight={bodyweight}
+                        readOnly={readOnly}
                         onChange={(updated) => updateSet(dropIdx, updated)}
                       />
                     ))}
@@ -279,12 +306,14 @@ function ExerciseBlock({
 export default function WorkoutSessionPage() {
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const id = params.id as string;
 
   const [session, setSession] = useState<WorkoutSession | null>(null);
   const [prevSessions, setPrevSessions] = useState<Map<string, WorkoutSession>>(new Map());
   const [loading, setLoading] = useState(true);
   const [completing, setCompleting] = useState(false);
+  const [editing, setEditing] = useState(false);
 
   // Holds the latest saved snapshot so completeSession never reads stale state
   const latestRef = useRef<WorkoutSession | null>(null);
@@ -297,6 +326,8 @@ export default function WorkoutSessionPage() {
       if (!s) { router.replace('/workout'); return; }
       setSession(s);
       latestRef.current = s;
+      // Default: editing if session not complete, or if ?edit=true in URL
+      setEditing(!s.completedAt || searchParams.get('edit') === 'true');
 
       const allRes = await fetch('/api/workout');
       const allSessions: WorkoutSession[] = allRes.ok ? await allRes.json() : [];
@@ -395,9 +426,25 @@ export default function WorkoutSessionPage() {
               <p className="text-[#6B6B8A] text-xs">{formatDate(session.date)}</p>
             </div>
             {isComplete && (
-              <span className="text-[11px] bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded-full font-semibold shrink-0">
-                Terminée ✓
-              </span>
+              <button
+                onClick={() => setEditing((e) => !e)}
+                title={editing ? 'Mode lecture' : 'Modifier'}
+                className="w-8 h-8 rounded-xl bg-[#1A1A2E] border border-[#2d1f5e] flex items-center justify-center text-[#A78BFA] hover:border-[#7C3AED]/60 transition-colors shrink-0"
+              >
+                {editing ? (
+                  // Eye icon — click to go back to view mode
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                ) : (
+                  // Pencil icon — click to edit
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                  </svg>
+                )}
+              </button>
             )}
           </div>
 
@@ -429,6 +476,7 @@ export default function WorkoutSessionPage() {
                   key={ex.id}
                   exercise={ex}
                   prevSession={prevSessions.get(ex.name)}
+                  readOnly={!editing}
                   onChange={(updater) => updateExercise(exIndex, updater)}
                 />
               );
@@ -456,8 +504,21 @@ export default function WorkoutSessionPage() {
           </button>
         )}
 
-        {/* Summary when complete */}
-        {isComplete && (
+        {/* Confirm changes button (edit mode on completed session) */}
+        {isComplete && editing && (
+          <button
+            onClick={() => setEditing(false)}
+            className="w-full py-4 bg-[#7C3AED] text-white rounded-2xl font-bold text-base shadow-lg shadow-violet-900/40 hover:bg-[#6D28D9] transition-colors flex items-center justify-center gap-2 mt-2"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+            Confirmer les modifications
+          </button>
+        )}
+
+        {/* Summary when complete (view mode) */}
+        {isComplete && !editing && (
           <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-4 text-center">
             <p className="text-emerald-400 font-bold text-lg">Séance terminée ! 🎉</p>
             <p className="text-[#6B6B8A] text-sm mt-1">

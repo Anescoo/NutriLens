@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 
 import type { WorkoutSession, WorkoutExercise, WorkoutSet, GroupType } from '@/types';
+import { EXERCISES, MUSCLE_GROUPS, type MuscleGroup, type ExerciseType } from '@/lib/exercises';
 
 function formatDate(dateStr: string) {
   const d = new Date(dateStr + 'T12:00:00');
@@ -30,6 +31,205 @@ interface BuilderExercise {
 
 function makeExercise(): BuilderExercise {
   return { id: uid(), name: '', setCount: 3, dropCount: 0 };
+}
+
+// ─── Custom exercises (localStorage) ─────────────────────────────────────────
+
+const CUSTOM_EXERCISES_KEY = 'nutrilens_custom_exercises';
+
+function loadCustomExercises(): string[] {
+  try {
+    return JSON.parse(localStorage.getItem(CUSTOM_EXERCISES_KEY) ?? '[]');
+  } catch {
+    return [];
+  }
+}
+
+function saveCustomExercises(names: string[]) {
+  localStorage.setItem(CUSTOM_EXERCISES_KEY, JSON.stringify(names));
+}
+
+// ─── Exercise picker ─────────────────────────────────────────────────────────
+
+function ExercisePicker({
+  value,
+  onChange,
+  onClose,
+}: {
+  value: string;
+  onChange: (name: string) => void;
+  onClose: () => void;
+}) {
+  const [search, setSearch] = useState('');
+  const [muscleFilter, setMuscleFilter] = useState<MuscleGroup | null>(null);
+  const [typeFilter, setTypeFilter] = useState<ExerciseType | null>(null);
+  const [customExercises, setCustomExercises] = useState<string[]>([]);
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setCustomExercises(loadCustomExercises());
+    setTimeout(() => searchRef.current?.focus(), 50);
+  }, []);
+
+  const filteredPredefined = EXERCISES.filter((e) => {
+    if (muscleFilter && e.muscle !== muscleFilter) return false;
+    if (typeFilter && e.type !== typeFilter) return false;
+    if (search && !e.name.toLowerCase().includes(search.toLowerCase())) return false;
+    return true;
+  });
+
+  const filteredCustom = customExercises.filter(
+    (name) => !search || name.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const searchTrimmed = search.trim();
+  const canAdd =
+    searchTrimmed.length > 0 &&
+    !EXERCISES.some((e) => e.name.toLowerCase() === searchTrimmed.toLowerCase()) &&
+    !customExercises.some((n) => n.toLowerCase() === searchTrimmed.toLowerCase());
+
+  function select(name: string) {
+    onChange(name);
+    onClose();
+  }
+
+  function addCustom() {
+    if (!searchTrimmed) return;
+    const updated = [...customExercises, searchTrimmed];
+    setCustomExercises(updated);
+    saveCustomExercises(updated);
+    select(searchTrimmed);
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 bg-black/70 flex flex-col justify-end"
+      onClick={onClose}
+    >
+      <div
+        className="bg-[#0F0F1A] rounded-t-3xl max-h-[85vh] flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Handle */}
+        <div className="w-10 h-1 bg-[#2d1f5e] rounded-full mx-auto mt-3 mb-4 shrink-0" />
+
+        {/* Search */}
+        <div className="px-4 mb-3 shrink-0">
+          <input
+            ref={searchRef}
+            type="text"
+            placeholder="Rechercher ou créer un exercice…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full bg-[#1A1A2E] border border-[#2d1f5e] rounded-xl px-3 py-2.5 text-white text-sm placeholder-[#6B6B8A] focus:outline-none focus:border-[#7C3AED]"
+          />
+        </div>
+
+        {/* Type filter */}
+        <div className="px-4 mb-2 flex gap-2 shrink-0">
+          {(['Polyarticulaire', 'Isolation'] as ExerciseType[]).map((t) => (
+            <button
+              key={t}
+              onClick={() => setTypeFilter(typeFilter === t ? null : t)}
+              className={`px-3 py-1 rounded-lg text-xs font-semibold border transition-all ${
+                typeFilter === t
+                  ? 'bg-[#7C3AED] border-[#7C3AED] text-white'
+                  : 'bg-[#1A1A2E] border-[#2d1f5e] text-[#A78BFA]'
+              }`}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
+
+        {/* Muscle group filter */}
+        <div className="px-4 mb-3 flex gap-1.5 overflow-x-auto pb-1 shrink-0 scrollbar-none">
+          {MUSCLE_GROUPS.map((m) => (
+            <button
+              key={m}
+              onClick={() => setMuscleFilter(muscleFilter === m ? null : m)}
+              className={`px-3 py-1 rounded-lg text-xs font-medium border whitespace-nowrap transition-all ${
+                muscleFilter === m
+                  ? 'bg-[#7C3AED] border-[#7C3AED] text-white'
+                  : 'bg-[#1A1A2E] border-[#2d1f5e] text-[#6B6B8A]'
+              }`}
+            >
+              {m}
+            </button>
+          ))}
+        </div>
+
+        {/* Exercise list */}
+        <div className="flex-1 overflow-y-auto px-4 pb-6">
+
+          {/* ── Add new custom exercise ── */}
+          {canAdd && (
+            <button
+              onClick={addCustom}
+              className="w-full text-left px-3 py-2.5 rounded-xl mb-2 flex items-center gap-2.5 bg-emerald-500/10 border border-emerald-500/30 hover:bg-emerald-500/20 transition-colors"
+            >
+              <span className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#4ade80" strokeWidth={3} strokeLinecap="round">
+                  <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+              </span>
+              <span className="text-sm text-emerald-400 font-medium">
+                Ajouter <span className="text-white font-semibold">"{searchTrimmed}"</span> à mes exercices
+              </span>
+            </button>
+          )}
+
+          {/* ── Custom (saved) exercises ── */}
+          {filteredCustom.map((name) => (
+            <button
+              key={`custom-${name}`}
+              onClick={() => select(name)}
+              className={`w-full text-left px-3 py-2.5 rounded-xl mb-1 flex items-center justify-between transition-colors ${
+                value === name
+                  ? 'bg-[#7C3AED]/20 border border-[#7C3AED]/40'
+                  : 'hover:bg-[#1A1A2E]'
+              }`}
+            >
+              <span className="text-white text-sm font-medium">{name}</span>
+              <span className="text-[10px] px-1.5 py-0.5 rounded font-semibold bg-amber-500/20 text-amber-300 shrink-0 ml-2">
+                Perso
+              </span>
+            </button>
+          ))}
+
+          {/* ── Predefined exercises ── */}
+          {filteredPredefined.length === 0 && filteredCustom.length === 0 && !canAdd && (
+            <p className="text-[#6B6B8A] text-sm text-center py-4">Aucun résultat</p>
+          )}
+          {filteredPredefined.map((e) => (
+            <button
+              key={e.name}
+              onClick={() => select(e.name)}
+              className={`w-full text-left px-3 py-2.5 rounded-xl mb-1 flex items-center justify-between transition-colors ${
+                value === e.name
+                  ? 'bg-[#7C3AED]/20 border border-[#7C3AED]/40'
+                  : 'hover:bg-[#1A1A2E]'
+              }`}
+            >
+              <span className="text-white text-sm font-medium">{e.name}</span>
+              <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                <span
+                  className={`text-[10px] px-1.5 py-0.5 rounded font-semibold ${
+                    e.type === 'Polyarticulaire'
+                      ? 'bg-violet-500/20 text-violet-300'
+                      : 'bg-blue-500/20 text-blue-300'
+                  }`}
+                >
+                  {e.type === 'Polyarticulaire' ? 'Poly' : 'Iso'}
+                </span>
+                <span className="text-[10px] text-[#6B6B8A]">{e.muscle}</span>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 // ─── Group badge ─────────────────────────────────────────────────────────────
@@ -74,6 +274,7 @@ function ExerciseCard({
   onMoveDown: () => void;
 }) {
   const [showLinkMenu, setShowLinkMenu] = useState(false);
+  const [showPicker, setShowPicker] = useState(false);
   const isGrouped = !!ex.groupId;
   const isSameGroupAsNext = nextEx && ex.groupId && nextEx.groupId === ex.groupId;
 
@@ -118,12 +319,21 @@ function ExerciseCard({
             </button>
           </div>
 
-          <input
-            value={ex.name}
-            onChange={(e) => onChange({ ...ex, name: e.target.value })}
-            placeholder="Nom de l'exercice…"
-            className="flex-1 bg-[#0F0F1A] border border-[#2d1f5e] rounded-xl px-3 py-2 text-white text-sm placeholder-[#6B6B8A] focus:outline-none focus:border-[#7C3AED]"
-          />
+          <button
+            onClick={() => setShowPicker(true)}
+            className={`flex-1 bg-[#0F0F1A] border border-[#2d1f5e] rounded-xl px-3 py-2 text-sm text-left hover:border-[#7C3AED]/60 transition-colors focus:outline-none ${
+              ex.name ? 'text-white' : 'text-[#6B6B8A]'
+            }`}
+          >
+            {ex.name || "Nom de l'exercice…"}
+          </button>
+          {showPicker && (
+            <ExercisePicker
+              value={ex.name}
+              onChange={(name) => onChange({ ...ex, name })}
+              onClose={() => setShowPicker(false)}
+            />
+          )}
 
           {isGrouped && <GroupBadge type={ex.groupType!} />}
 

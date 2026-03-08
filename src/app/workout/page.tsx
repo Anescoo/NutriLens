@@ -70,12 +70,37 @@ function SessionCard({
           </div>
         </div>
         <div className="flex gap-2 shrink-0">
-          <Link
-            href={`/workout/${session.id}`}
-            className="px-3 py-1.5 bg-[#7C3AED]/20 text-[#A78BFA] rounded-xl text-sm font-semibold border border-[#7C3AED]/30 hover:bg-[#7C3AED]/30 transition-colors"
-          >
-            {isComplete ? 'Voir' : 'Reprendre'}
-          </Link>
+          {isComplete ? (
+            <>
+              <Link
+                href={`/workout/${session.id}`}
+                title="Voir"
+                className="w-8 h-8 bg-[#1A1A2E] border border-[#2d1f5e] hover:border-[#7C3AED]/60 text-[#A78BFA] rounded-xl flex items-center justify-center transition-colors"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+              </Link>
+              <Link
+                href={`/workout/${session.id}?edit=true`}
+                title="Modifier"
+                className="w-8 h-8 bg-[#7C3AED]/20 border border-[#7C3AED]/30 hover:bg-[#7C3AED]/30 text-[#A78BFA] rounded-xl flex items-center justify-center transition-colors"
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                </svg>
+              </Link>
+            </>
+          ) : (
+            <Link
+              href={`/workout/${session.id}`}
+              className="px-3 py-1.5 bg-[#7C3AED]/20 text-[#A78BFA] rounded-xl text-sm font-semibold border border-[#7C3AED]/30 hover:bg-[#7C3AED]/30 transition-colors"
+            >
+              Reprendre
+            </Link>
+          )}
           {confirming ? (
             <button
               onClick={() => onDelete(session.id)}
@@ -140,16 +165,27 @@ export default function WorkoutPage() {
               {sessions.length} séance{sessions.length !== 1 ? 's' : ''}
             </p>
           </div>
-          <Link
-            href="/workout/new"
-            className="flex items-center gap-2 bg-[#7C3AED] text-white px-4 py-2.5 rounded-xl font-semibold text-sm shadow-lg shadow-violet-900/40 hover:bg-[#6D28D9] transition-colors"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-            Nouvelle
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/workout/progression"
+              className="flex items-center gap-1.5 bg-[#1A1A2E] border border-[#2d1f5e] hover:border-[#7C3AED]/60 text-[#A78BFA] px-3 py-2.5 rounded-xl font-semibold text-sm transition-colors"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+              </svg>
+              Stats
+            </Link>
+            <Link
+              href="/workout/new"
+              className="flex items-center gap-2 bg-[#7C3AED] text-white px-4 py-2.5 rounded-xl font-semibold text-sm shadow-lg shadow-violet-900/40 hover:bg-[#6D28D9] transition-colors"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              Nouvelle
+            </Link>
+          </div>
         </div>
 
         {loading && (
