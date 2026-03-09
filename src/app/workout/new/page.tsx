@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 
-import type { WorkoutSession, WorkoutExercise, WorkoutSet, GroupType } from '@/types';
+import type { WorkoutSession, WorkoutExercise, WorkoutSet, GroupType, WorkoutPlan, WorkoutPlanSession } from '@/types';
 import { EXERCISES, MUSCLE_GROUPS, type MuscleGroup, type ExerciseType } from '@/lib/exercises';
 
 function formatDate(dateStr: string) {
@@ -55,10 +55,12 @@ function ExercisePicker({
   value,
   onChange,
   onClose,
+  usedNames = [],
 }: {
   value: string;
   onChange: (name: string) => void;
   onClose: () => void;
+  usedNames?: string[];
 }) {
   const [search, setSearch] = useState('');
   const [muscleFilter, setMuscleFilter] = useState<MuscleGroup | null>(null);
@@ -72,6 +74,7 @@ function ExercisePicker({
   }, []);
 
   const filteredPredefined = EXERCISES.filter((e) => {
+    if (usedNames.includes(e.name)) return false;
     if (muscleFilter && e.muscle !== muscleFilter) return false;
     if (typeFilter && e.type !== typeFilter) return false;
     if (search && !e.name.toLowerCase().includes(search.toLowerCase())) return false;
@@ -79,12 +82,13 @@ function ExercisePicker({
   });
 
   const filteredCustom = customExercises.filter(
-    (name) => !search || name.toLowerCase().includes(search.toLowerCase())
+    (name) => !usedNames.includes(name) && (!search || name.toLowerCase().includes(search.toLowerCase()))
   );
 
   const searchTrimmed = search.trim();
   const canAdd =
     searchTrimmed.length > 0 &&
+    !usedNames.some((n) => n.toLowerCase() === searchTrimmed.toLowerCase()) &&
     !EXERCISES.some((e) => e.name.toLowerCase() === searchTrimmed.toLowerCase()) &&
     !customExercises.some((n) => n.toLowerCase() === searchTrimmed.toLowerCase());
 
@@ -261,6 +265,7 @@ function ExerciseCard({
   onUnlink,
   onMoveUp,
   onMoveDown,
+  usedNames = [],
 }: {
   ex: BuilderExercise;
   index: number;
@@ -272,6 +277,7 @@ function ExerciseCard({
   onUnlink: () => void;
   onMoveUp: () => void;
   onMoveDown: () => void;
+  usedNames?: string[];
 }) {
   const [showLinkMenu, setShowLinkMenu] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
@@ -332,6 +338,7 @@ function ExerciseCard({
               value={ex.name}
               onChange={(name) => onChange({ ...ex, name })}
               onClose={() => setShowPicker(false)}
+              usedNames={usedNames}
             />
           )}
 
@@ -468,9 +475,13 @@ export default function NewWorkoutPage() {
   const [pastSessions, setPastSessions] = useState<WorkoutSession[]>([]);
   const [showImport, setShowImport] = useState(false);
   const [copyWeights, setCopyWeights] = useState(false);
+  const [plans, setPlans] = useState<WorkoutPlan[]>([]);
+  const [showPlanImport, setShowPlanImport] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<WorkoutPlan | null>(null);
 
   useEffect(() => {
     fetch('/api/workout').then((r) => r.json()).then(setPastSessions);
+    fetch('/api/workout/plans').then((r) => r.json()).then(setPlans);
   }, []);
 
   function updateExercise(index: number, updated: BuilderExercise) {
@@ -534,6 +545,21 @@ export default function NewWorkoutPage() {
     });
     setExercises(imported);
     setShowImport(false);
+  }
+
+  function importFromPlanSession(planSession: WorkoutPlanSession, planName: string) {
+    const imported: BuilderExercise[] = planSession.exercises.map((ex) => ({
+      id: uid(),
+      name: ex.name,
+      setCount: ex.sets,
+      dropCount: 0,
+      groupId: ex.groupId,
+      groupType: ex.groupType,
+    }));
+    setExercises(imported);
+    if (!name.trim()) setName(`${planName} — ${planSession.name}`);
+    setShowPlanImport(false);
+    setSelectedPlan(null);
   }
 
   async function handleStart() {
@@ -608,6 +634,69 @@ export default function NewWorkoutPage() {
           className="w-full bg-[#1A1A2E] border border-[#2d1f5e] rounded-2xl px-4 py-3 text-white text-base placeholder-[#6B6B8A] focus:outline-none focus:border-[#7C3AED] mb-3"
         />
 
+        {/* Import from plan */}
+        {plans.length > 0 && (
+          <div className="mb-3">
+            <button
+              onClick={() => { setShowPlanImport((v) => !v); setShowImport(false); setSelectedPlan(null); }}
+              className="flex items-center gap-2 text-sm text-[#A78BFA] hover:text-violet-300 transition-colors"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
+              </svg>
+              Depuis un plan d&apos;entraînement
+            </button>
+
+            {showPlanImport && (
+              <div className="mt-3 bg-[#1A1A2E] border border-[#2d1f5e] rounded-2xl overflow-hidden">
+                {!selectedPlan ? (
+                  /* Step 1 — pick a plan */
+                  <div>
+                    <p className="px-4 py-2.5 text-[10px] text-[#6B6B8A] uppercase tracking-wider font-semibold border-b border-[#2d1f5e]">Choisir un plan</p>
+                    {plans.map((p) => (
+                      <button
+                        key={p.id}
+                        onClick={() => setSelectedPlan(p)}
+                        className="w-full px-4 py-3 text-left border-b border-[#2d1f5e]/50 last:border-0 hover:bg-[#2d1f5e]/30 transition-colors flex items-center justify-between"
+                      >
+                        <div>
+                          <p className="text-white text-sm font-semibold">{p.name}</p>
+                          <p className="text-[#6B6B8A] text-xs mt-0.5">{p.sessions.map((s) => s.name).join(' · ')}</p>
+                        </div>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6B6B8A" strokeWidth="2" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  /* Step 2 — pick a session from the plan */
+                  <div>
+                    <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[#2d1f5e]">
+                      <button onClick={() => setSelectedPlan(null)} className="text-[#A78BFA]">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+                      </button>
+                      <p className="text-[10px] text-[#6B6B8A] uppercase tracking-wider font-semibold">{selectedPlan.name} — choisir une séance</p>
+                    </div>
+                    {selectedPlan.sessions.map((s) => (
+                      <button
+                        key={s.id}
+                        onClick={() => importFromPlanSession(s, selectedPlan.name)}
+                        className="w-full px-4 py-3 text-left border-b border-[#2d1f5e]/50 last:border-0 hover:bg-[#2d1f5e]/30 transition-colors"
+                      >
+                        <p className="text-white text-sm font-semibold">{s.name}</p>
+                        <p className="text-[#6B6B8A] text-xs mt-0.5">
+                          {s.exercises.length > 0
+                            ? s.exercises.map((e) => `${e.name} ×${e.sets}`).join(' · ')
+                            : 'Aucun exercice configuré'}
+                        </p>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Import from past session */}
         {pastSessions.length > 0 && (
           <div className="mb-5">
@@ -680,6 +769,7 @@ export default function NewWorkoutPage() {
               onUnlink={() => unlinkExercises(i)}
               onMoveUp={() => moveExercise(i, i - 1)}
               onMoveDown={() => moveExercise(i, i + 1)}
+              usedNames={exercises.filter((_, j) => j !== i).map((e) => e.name).filter(Boolean)}
             />
           ))}
         </div>

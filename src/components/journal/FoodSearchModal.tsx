@@ -83,11 +83,12 @@ export function FoodSearchModal({ initialMealType, onClose, onAdd }: FoodSearchM
     setSelected(result);
     setGrams(result.servingGrams ?? 100);
     setServings(1);
-    setQuantityMode(result.servingGrams ? 'servings' : 'grams');
+    setQuantityMode('servings');
   };
 
-  const effectiveGrams = quantityMode === 'servings' && selected?.servingGrams
-    ? Math.round(servings * selected.servingGrams)
+  const servingSize = selected?.servingGrams ?? 100;
+  const effectiveGrams = quantityMode === 'servings'
+    ? Math.round(servings * servingSize)
     : grams;
 
   const macros = selected
@@ -191,22 +192,20 @@ export function FoodSearchModal({ initialMealType, onClose, onAdd }: FoodSearchM
             </div>
 
             {/* Quantity mode toggle */}
-            {selected.servingGrams && (
-              <div className="flex bg-[#0F0F1A] rounded-xl p-1 mb-3 w-fit">
-                <button
-                  onClick={() => setQuantityMode('grams')}
-                  className={['px-3 py-1.5 rounded-lg text-xs font-medium transition-all', quantityMode === 'grams' ? 'bg-[#7C3AED] text-white' : 'text-[#6B6B8A]'].join(' ')}
-                >
-                  Grammes
-                </button>
-                <button
-                  onClick={() => setQuantityMode('servings')}
-                  className={['px-3 py-1.5 rounded-lg text-xs font-medium transition-all', quantityMode === 'servings' ? 'bg-[#7C3AED] text-white' : 'text-[#6B6B8A]'].join(' ')}
-                >
-                  Portions {selected.servingSize ? `(${selected.servingSize})` : ''}
-                </button>
-              </div>
-            )}
+            <div className="flex bg-[#0F0F1A] rounded-xl p-1 mb-3 w-fit">
+              <button
+                onClick={() => setQuantityMode('servings')}
+                className={['px-3 py-1.5 rounded-lg text-xs font-medium transition-all', quantityMode === 'servings' ? 'bg-[#7C3AED] text-white' : 'text-[#6B6B8A]'].join(' ')}
+              >
+                {selected.servingSize ? `Portions (${selected.servingSize})` : 'Portions'}
+              </button>
+              <button
+                onClick={() => setQuantityMode('grams')}
+                className={['px-3 py-1.5 rounded-lg text-xs font-medium transition-all', quantityMode === 'grams' ? 'bg-[#7C3AED] text-white' : 'text-[#6B6B8A]'].join(' ')}
+              >
+                Grammes
+              </button>
+            </div>
 
             {/* Quantity input */}
             <div className="flex items-center gap-3 mb-4">
@@ -230,7 +229,7 @@ export function FoodSearchModal({ initialMealType, onClose, onAdd }: FoodSearchM
                   className="w-full bg-[#0F0F1A] border border-[#2d1f5e] rounded-xl px-3 py-2.5 text-base text-white text-center focus:outline-none focus:border-[#7C3AED]"
                 />
                 <p className="text-[10px] text-[#6B6B8A] mt-1">
-                  {quantityMode === 'grams' ? 'grammes' : selected.servingGrams ? `≈ ${effectiveGrams}g` : 'portions'}
+                  {quantityMode === 'grams' ? 'grammes' : `≈ ${effectiveGrams}g`}
                 </p>
               </div>
               <button

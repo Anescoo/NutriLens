@@ -105,3 +105,26 @@ export interface WorkoutSession {
   completedAt?: number; // Unix ms
   notes?: string;
 }
+
+// ─── Workout Plan types ────────────────────────────────────────────────────────
+
+export interface WorkoutPlanExercise {
+  id: string;
+  name: string;
+  sets: number;          // number of sets
+  groupId?: string;
+  groupType?: GroupType;
+}
+
+export interface WorkoutPlanSession {
+  id: string;
+  name: string;          // "Push", "Pull", "Legs"
+  exercises: WorkoutPlanExercise[];
+}
+
+export interface WorkoutPlan {
+  id: string;
+  name: string;          // "PPL", "Full Body", etc.
+  sessions: WorkoutPlanSession[];
+  createdAt: number;     // Unix ms
+}

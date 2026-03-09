@@ -19,6 +19,7 @@ model User {
   bodyMeasurements BodyMeasurement[]
   goals            UserGoals?
   workoutSessions  WorkoutSession[]
+  workoutPlans     WorkoutPlan[]
 }
 
 model MealEntry {
@@ -79,6 +80,18 @@ model WorkoutSession {
   exercises   String
   completedAt BigInt?
   notes       String?
+
+  @@index([userId])
+}
+
+model WorkoutPlan {
+  id        String @id @default(cuid())
+  userId    String
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name      String
+  sessions  String  // JSON: WorkoutPlanSession[]
+  createdAt BigInt
 
   @@index([userId])
 }
