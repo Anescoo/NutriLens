@@ -18,8 +18,9 @@ model User {
   mealEntries      MealEntry[]
   bodyMeasurements BodyMeasurement[]
   goals            UserGoals?
-  workoutSessions  WorkoutSession[]
-  workoutPlans     WorkoutPlan[]
+  workoutSessions   WorkoutSession[]
+  workoutPlans      WorkoutPlan[]
+  pushSubscriptions PushSubscription[]
 }
 
 model MealEntry {
@@ -92,6 +93,20 @@ model WorkoutPlan {
   name      String
   sessions  String  // JSON: WorkoutPlanSession[]
   createdAt BigInt
+
+  @@index([userId])
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+
+  createdAt DateTime @default(now())
 
   @@index([userId])
 }

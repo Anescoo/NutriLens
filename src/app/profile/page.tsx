@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { useGoalsStore } from '@/store/goalsStore';
+import { NotificationSection } from '@/components/profile/NotificationSection';
 import type { BodyMeasurement } from '@/types';
 
 function calcBMI(weight: number, height: number) {
@@ -224,6 +225,9 @@ export default function ProfilePage() {
           ))}
         </div>
       </div>
+
+      {/* Notifications */}
+      <NotificationSection />
 
       {/* Account */}
       <div className="bg-[#1A1A2E] border border-[#2d1f5e] rounded-2xl p-4 mb-4">
