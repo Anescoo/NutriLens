@@ -83,7 +83,7 @@ export function BottomNav() {
   const { data: session, status } = useSession();
 
   if (status === 'loading') return null;
-  if (!session || pathname === '/login' || pathname === '/signup') return null;
+  if (!session || pathname === '/login' || pathname === '/signup' || pathname.startsWith('/share/')) return null;
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 pb-[env(safe-area-inset-bottom)]">

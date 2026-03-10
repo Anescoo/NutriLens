@@ -94,7 +94,17 @@ model WorkoutPlan {
   sessions  String  // JSON: WorkoutPlanSession[]
   createdAt BigInt
 
+  sharedLinks SharedPlan[]
+
   @@index([userId])
+}
+
+model SharedPlan {
+  id        String  @id @default(cuid())
+  token     String  @unique
+  planId    String?
+  plan      WorkoutPlan? @relation(fields: [planId], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now())
 }
 
 model PushSubscription {

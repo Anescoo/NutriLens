@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 
-import type { WorkoutSession, WorkoutPlan, WorkoutPlanSession, WorkoutPlanExercise, GroupType } from '@/types';
+import type { WorkoutSession, WorkoutPlan, WorkoutPlanSession, GroupType } from '@/types';
 import { EXERCISES } from '@/lib/exercises';
 import { ImportFilePicker } from '@/components/workout/ImportFilePicker';
 
@@ -147,17 +147,19 @@ function ExercisePickerMini({
 
 interface PlanEditorProps {
   initial: WorkoutPlan | null;
+  existingPlans: WorkoutPlan[];
   onSave: (plan: Omit<WorkoutPlan, 'id' | 'createdAt'>) => void;
   onCancel: () => void;
 }
 
-function PlanEditor({ initial, onSave, onCancel }: PlanEditorProps) {
+function PlanEditor({ initial, existingPlans, onSave, onCancel }: PlanEditorProps) {
   const [name, setName] = useState(initial?.name ?? '');
   const [sessions, setSessions] = useState<WorkoutPlanSession[]>(
     initial?.sessions ?? [{ id: uid(), name: 'Séance A', exercises: [] }]
   );
   const [pickerInfo, setPickerInfo] = useState<{ sessionIdx: number; exIdx: number } | null>(null);
   const [linkMenuInfo, setLinkMenuInfo] = useState<{ si: number; ei: number } | null>(null);
+  const [showPlanPicker, setShowPlanPicker] = useState(false);
 
   function addSession() {
     setSessions((prev) => [...prev, { id: uid(), name: `Séance ${String.fromCharCode(65 + prev.length)}`, exercises: [] }]);
@@ -217,7 +219,7 @@ function PlanEditor({ initial, onSave, onCancel }: PlanEditorProps) {
         <button onClick={onCancel} className="w-9 h-9 rounded-xl bg-[#1A1A2E] border border-[#2d1f5e] flex items-center justify-center text-[#A78BFA]">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
         </button>
-        <h1 className="text-lg font-bold text-white flex-1">{initial ? 'Modifier le plan' : 'Nouveau plan'}</h1>
+        <h1 className="text-lg font-bold text-white flex-1">{initial?.id ? 'Modifier le plan' : initial ? 'Dupliquer le plan' : 'Nouveau plan'}</h1>
       </div>
 
       {/* Scrollable content */}
@@ -228,8 +230,46 @@ function PlanEditor({ initial, onSave, onCancel }: PlanEditorProps) {
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Nom du plan (ex: PPL, Full Body…)"
-          className="w-full bg-[#1A1A2E] border border-[#2d1f5e] rounded-2xl px-4 py-3 text-base text-white placeholder-[#6B6B8A] focus:outline-none focus:border-[#7C3AED] mb-5"
+          className="w-full bg-[#1A1A2E] border border-[#2d1f5e] rounded-2xl px-4 py-3 text-base text-white placeholder-[#6B6B8A] focus:outline-none focus:border-[#7C3AED] mb-3"
         />
+
+        {/* Import from existing plan (only when creating) */}
+        {!initial?.id && existingPlans.length > 0 && (
+          <div className="mb-5">
+            <button
+              onClick={() => setShowPlanPicker((v) => !v)}
+              className="flex items-center gap-2 text-sm text-[#A78BFA] hover:text-violet-300 transition-colors"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+                <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+              </svg>
+              Partir d&apos;un plan existant
+            </button>
+
+            {showPlanPicker && (
+              <div className="mt-3 bg-[#1A1A2E] border border-[#2d1f5e] rounded-2xl overflow-hidden">
+                <p className="px-4 py-2.5 text-[10px] text-[#6B6B8A] uppercase tracking-wider font-semibold border-b border-[#2d1f5e]">Choisir un plan à copier</p>
+                {existingPlans.map((p) => (
+                  <button
+                    key={p.id}
+                    onClick={() => {
+                      setSessions(p.sessions.map((s) => ({ ...s, id: uid(), exercises: s.exercises.map((e) => ({ ...e, id: uid() })) })));
+                      if (!name.trim()) setName(`Copie de ${p.name}`);
+                      setShowPlanPicker(false);
+                    }}
+                    className="w-full px-4 py-3 text-left border-b border-[#2d1f5e]/50 last:border-0 hover:bg-[#2d1f5e]/30 transition-colors flex items-center justify-between"
+                  >
+                    <div>
+                      <p className="text-white text-sm font-semibold">{p.name}</p>
+                      <p className="text-[#6B6B8A] text-xs mt-0.5">{p.sessions.map((s) => s.name).join(' · ')}</p>
+                    </div>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6B6B8A" strokeWidth="2" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Sessions */}
         <div className="space-y-4">
@@ -434,10 +474,32 @@ function PlanViewModal({ plan, onClose }: { plan: WorkoutPlan; onClose: () => vo
   );
 }
 
-function PlanCard({ plan, onEdit, onDelete }: { plan: WorkoutPlan; onEdit: () => void; onDelete: () => void }) {
+function PlanCard({ plan, onEdit, onDelete, onCopied }: { plan: WorkoutPlan; onEdit: () => void; onDelete: () => void; onCopied: () => void }) {
   const [confirming, setConfirming] = useState(false);
   const [viewing, setViewing] = useState(false);
+  const [sharing, setSharing] = useState(false);
+  const [copied, setCopied] = useState(false);
   const totalExercises = plan.sessions.reduce((s, sess) => s + sess.exercises.length, 0);
+
+  async function handleShare() {
+    setSharing(true);
+    try {
+      const res = await fetch(`/api/workout/plans/${plan.id}/share`, { method: 'POST' });
+      const { token } = await res.json();
+      const url = `${window.location.origin}/share/${token}`;
+      try {
+        await navigator.clipboard.writeText(url);
+      } catch {
+        // clipboard not available — prompt user manually
+        window.prompt('Copier ce lien :', url);
+      }
+      setCopied(true);
+      onCopied();
+      setTimeout(() => setCopied(false), 2500);
+    } finally {
+      setSharing(false);
+    }
+  }
 
   return (
     <>
@@ -462,6 +524,17 @@ function PlanCard({ plan, onEdit, onDelete }: { plan: WorkoutPlan; onEdit: () =>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
             </button>
             <button
+              onClick={handleShare}
+              disabled={sharing}
+              title={copied ? 'Lien copié !' : 'Partager'}
+              className={['w-8 h-8 border rounded-xl flex items-center justify-center transition-colors', copied ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400' : 'bg-[#1A1A2E] border-[#2d1f5e] hover:border-[#7C3AED]/60 text-[#A78BFA]'].join(' ')}
+            >
+              {copied
+                ? <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+              }
+            </button>
+            <button
               onClick={onEdit}
               className="w-8 h-8 bg-[#7C3AED]/20 border border-[#7C3AED]/30 hover:bg-[#7C3AED]/30 text-[#A78BFA] rounded-xl flex items-center justify-center transition-colors"
             >
@@ -480,12 +553,34 @@ function PlanCard({ plan, onEdit, onDelete }: { plan: WorkoutPlan; onEdit: () =>
   );
 }
 
-// ─── Main page ────────────────────────────────────────────────────────────────
-
 type Tab = 'sessions' | 'plans';
+
+// ─── Copy toast ──────────────────────────────────────────────────────────────
+
+function CopyToast({ visible }: { visible: boolean }) {
+  return (
+    <div
+      className={[
+        'fixed top-5 left-1/2 -translate-x-1/2 z-[300] flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-[#1A1A2E] border border-emerald-500/40 shadow-xl transition-all duration-300',
+        visible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2 pointer-events-none',
+      ].join(' ')}
+    >
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" className="text-emerald-400 shrink-0"><polyline points="20 6 9 17 4 12"/></svg>
+      <span className="text-sm text-white font-medium">Lien copié dans le presse-papier</span>
+    </div>
+  );
+}
+
+// ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function WorkoutPage() {
   const [tab, setTab] = useState<Tab>('sessions');
+  const [copyToast, setCopyToast] = useState(false);
+
+  function showCopyToast() {
+    setCopyToast(true);
+    setTimeout(() => setCopyToast(false), 2500);
+  }
 
   // Sessions state
   const [sessions, setSessions] = useState<WorkoutSession[]>([]);
@@ -547,10 +642,13 @@ export default function WorkoutPage() {
 
   return (
     <>
+      <CopyToast visible={copyToast} />
+
       {/* Plan editor overlay */}
       {editingPlan !== null && (
         <PlanEditor
           initial={editingPlan === 'new' ? null : editingPlan}
+          existingPlans={plans}
           onSave={handleSavePlan}
           onCancel={() => setEditingPlan(null)}
         />
@@ -699,6 +797,7 @@ export default function WorkoutPage() {
                       plan={p}
                       onEdit={() => setEditingPlan(p)}
                       onDelete={() => handleDeletePlan(p.id)}
+                      onCopied={showCopyToast}
                     />
                   ))}
                 </div>
