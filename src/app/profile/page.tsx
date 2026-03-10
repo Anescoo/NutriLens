@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { useGoalsStore } from '@/store/goalsStore';
 import { NotificationSection } from '@/components/profile/NotificationSection';
+import { ExportSection } from '@/components/profile/ExportSection';
 import type { BodyMeasurement } from '@/types';
 
 function calcBMI(weight: number, height: number) {
@@ -225,6 +226,9 @@ export default function ProfilePage() {
           ))}
         </div>
       </div>
+
+      {/* Export */}
+      <ExportSection />
 
       {/* Notifications */}
       <NotificationSection />

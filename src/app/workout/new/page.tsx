@@ -27,6 +27,7 @@ interface BuilderExercise {
   groupId?: string;
   groupType?: GroupType;
   initialSets?: WorkoutSet[]; // pre-filled weights from a previous session
+  defaultReps?: number;       // target reps from a workout plan
 }
 
 function makeExercise(): BuilderExercise {
@@ -555,6 +556,7 @@ export default function NewWorkoutPage() {
       dropCount: 0,
       groupId: ex.groupId,
       groupType: ex.groupType,
+      ...(ex.reps !== undefined && { defaultReps: ex.reps }),
     }));
     setExercises(imported);
     if (!name.trim()) setName(`${planName} — ${planSession.name}`);
@@ -573,8 +575,9 @@ export default function NewWorkoutPage() {
           ? e.initialSets.map((s) => ({ ...s, id: uid(), done: false }))
           : (() => {
               const arr: WorkoutSet[] = [];
+              const repsVal = e.defaultReps != null ? String(e.defaultReps) : null;
               for (let s = 0; s < e.setCount; s++) {
-                arr.push(makeSet(false));
+                arr.push({ ...makeSet(false), reps: repsVal });
                 for (let d = 0; d < e.dropCount; d++) arr.push(makeSet(true));
               }
               return arr;

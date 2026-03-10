@@ -20,6 +20,9 @@
 # production
 /build
 
+# programmes pdf
+/public/Res/Program_examples
+
 # misc
 .DS_Store
 *.pem

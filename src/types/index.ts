@@ -112,6 +112,8 @@ export interface WorkoutPlanExercise {
   id: string;
   name: string;
   sets: number;          // number of sets
+  reps?: number;         // reps per set (from "4x15")
+  time?: string;         // duration (from "30sec", "4min", etc.)
   groupId?: string;
   groupType?: GroupType;
 }

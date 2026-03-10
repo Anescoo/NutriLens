@@ -5,6 +5,7 @@ import Link from 'next/link';
 
 import type { WorkoutSession, WorkoutPlan, WorkoutPlanSession, WorkoutPlanExercise, GroupType } from '@/types';
 import { EXERCISES } from '@/lib/exercises';
+import { ImportFilePicker } from '@/components/workout/ImportFilePicker';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -379,39 +380,103 @@ function PlanEditor({ initial, onSave, onCancel }: PlanEditorProps) {
 
 // ─── Plan card ────────────────────────────────────────────────────────────────
 
-function PlanCard({ plan, onEdit, onDelete }: { plan: WorkoutPlan; onEdit: () => void; onDelete: () => void }) {
-  const [confirming, setConfirming] = useState(false);
+function PlanViewModal({ plan, onClose }: { plan: WorkoutPlan; onClose: () => void }) {
   const totalExercises = plan.sessions.reduce((s, sess) => s + sess.exercises.length, 0);
-
   return (
-    <div className="bg-[#1A1A2E] border border-[#2d1f5e] rounded-2xl p-4">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex-1 min-w-0">
-          <h3 className="text-white font-bold text-base">{plan.name}</h3>
-          <p className="text-[#6B6B8A] text-sm mt-0.5">
+    <div className="fixed inset-0 z-[200] bg-black/70 flex flex-col justify-end" onClick={onClose}>
+      <div className="bg-[#0F0F1A] rounded-t-3xl w-full max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+        <div className="shrink-0 pt-3 pb-4 px-4 border-b border-[#2d1f5e]">
+          <div className="w-10 h-1 bg-[#2d1f5e] rounded-full mx-auto mb-4" />
+          <h2 className="text-base font-bold text-white">{plan.name}</h2>
+          <p className="text-[#6B6B8A] text-xs mt-0.5">
             {plan.sessions.length} séance{plan.sessions.length > 1 ? 's' : ''} · {totalExercises} exercice{totalExercises > 1 ? 's' : ''}
           </p>
-          <div className="flex flex-wrap gap-1.5 mt-2">
-            {plan.sessions.map((s) => (
-              <span key={s.id} className="text-[11px] bg-[#0F0F1A] text-[#A78BFA] px-2 py-0.5 rounded-full border border-[#2d1f5e]">{s.name}</span>
-            ))}
-          </div>
         </div>
-        <div className="flex gap-2 shrink-0">
+        <div className="flex-1 overflow-y-auto px-4 py-4 min-h-0 space-y-2.5">
+          {plan.sessions.map((session) => (
+            <div key={session.id} className="bg-[#1A1A2E] border border-[#2d1f5e] rounded-xl overflow-hidden">
+              <div className="px-3 py-2 bg-[#2d1f5e]/40 border-b border-[#2d1f5e] flex items-center justify-between">
+                <span className="text-sm font-bold text-white">{session.name}</span>
+                <span className="text-[10px] text-[#6B6B8A]">{session.exercises.length} ex.</span>
+              </div>
+              <div className="px-3 py-2 space-y-1.5">
+                {session.exercises.map((ex) => (
+                  <div key={ex.id} className="flex items-center justify-between gap-2">
+                    <span className="text-sm text-white flex-1 min-w-0 truncate">{ex.name}</span>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <span className="text-xs text-[#A78BFA]">{ex.sets} série{ex.sets > 1 ? 's' : ''}</span>
+                      {ex.reps !== undefined && (
+                        <span className="text-xs text-emerald-400">× {ex.reps} rép.</span>
+                      )}
+                      {ex.time && (
+                        <span className="text-xs text-sky-400">{ex.time}</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                {session.exercises.length === 0 && (
+                  <p className="text-[#6B6B8A] text-xs py-1">Aucun exercice</p>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="shrink-0 px-4 py-3 border-t border-[#2d1f5e]" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 12px)' }}>
           <button
-            onClick={onEdit}
-            className="w-8 h-8 bg-[#7C3AED]/20 border border-[#7C3AED]/30 hover:bg-[#7C3AED]/30 text-[#A78BFA] rounded-xl flex items-center justify-center transition-colors"
+            onClick={onClose}
+            className="w-full py-3 rounded-xl bg-[#1A1A2E] border border-[#2d1f5e] text-[#6B6B8A] text-sm font-semibold hover:border-[#7C3AED]/40 transition-colors"
           >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Fermer
           </button>
-          {confirming ? (
-            <button onClick={onDelete} className="px-3 py-1.5 bg-red-500/20 text-red-400 rounded-xl text-sm font-semibold border border-red-500/30">Confirmer</button>
-          ) : (
-            <button onClick={() => setConfirming(true)} onBlur={() => setConfirming(false)} className="px-3 py-1.5 text-[#6B6B8A] rounded-xl text-sm hover:text-red-400 transition-colors">✕</button>
-          )}
         </div>
       </div>
     </div>
+  );
+}
+
+function PlanCard({ plan, onEdit, onDelete }: { plan: WorkoutPlan; onEdit: () => void; onDelete: () => void }) {
+  const [confirming, setConfirming] = useState(false);
+  const [viewing, setViewing] = useState(false);
+  const totalExercises = plan.sessions.reduce((s, sess) => s + sess.exercises.length, 0);
+
+  return (
+    <>
+      <div className="bg-[#1A1A2E] border border-[#2d1f5e] rounded-2xl p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex-1 min-w-0">
+            <h3 className="text-white font-bold text-base truncate">{plan.name}</h3>
+            <p className="text-[#6B6B8A] text-sm mt-0.5">
+              {plan.sessions.length} séance{plan.sessions.length > 1 ? 's' : ''} · {totalExercises} exercice{totalExercises > 1 ? 's' : ''}
+            </p>
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {plan.sessions.map((s) => (
+                <span key={s.id} className="text-[11px] bg-[#0F0F1A] text-[#A78BFA] px-2 py-0.5 rounded-full border border-[#2d1f5e]">{s.name}</span>
+              ))}
+            </div>
+          </div>
+          <div className="flex gap-2 shrink-0">
+            <button
+              onClick={() => setViewing(true)}
+              className="w-8 h-8 bg-[#1A1A2E] border border-[#2d1f5e] hover:border-[#7C3AED]/60 text-[#A78BFA] rounded-xl flex items-center justify-center transition-colors"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+            <button
+              onClick={onEdit}
+              className="w-8 h-8 bg-[#7C3AED]/20 border border-[#7C3AED]/30 hover:bg-[#7C3AED]/30 text-[#A78BFA] rounded-xl flex items-center justify-center transition-colors"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </button>
+            {confirming ? (
+              <button onClick={onDelete} className="px-3 py-1.5 bg-red-500/20 text-red-400 rounded-xl text-sm font-semibold border border-red-500/30">Confirmer</button>
+            ) : (
+              <button onClick={() => setConfirming(true)} onBlur={() => setConfirming(false)} className="px-3 py-1.5 text-[#6B6B8A] rounded-xl text-sm hover:text-red-400 transition-colors">✕</button>
+            )}
+          </div>
+        </div>
+      </div>
+      {viewing && <PlanViewModal plan={plan} onClose={() => setViewing(false)} />}
+    </>
   );
 }
 
@@ -430,6 +495,7 @@ export default function WorkoutPage() {
   const [plans, setPlans] = useState<WorkoutPlan[]>([]);
   const [plansLoading, setPlansLoading] = useState(true);
   const [editingPlan, setEditingPlan] = useState<WorkoutPlan | null | 'new'>(null);
+  const [showImportFile, setShowImportFile] = useState(false);
 
   useEffect(() => {
     fetch('/api/workout').then((r) => r.json()).then((s) => { setSessions(s); setSessionsLoading(false); });
@@ -452,6 +518,13 @@ export default function WorkoutPage() {
       setPlans((prev) => prev.map((p) => p.id === editingPlan.id ? updated : p));
     }
     setEditingPlan(null);
+  }
+
+  async function handleImportPlan(data: Omit<WorkoutPlan, 'id' | 'createdAt'>) {
+    const res = await fetch('/api/workout/plans', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    const created = await res.json();
+    setPlans((prev) => [created, ...prev]);
   }
 
   async function handleDeletePlan(id: string) {
@@ -483,11 +556,19 @@ export default function WorkoutPage() {
         />
       )}
 
+      {/* Import from file modal */}
+      {showImportFile && (
+        <ImportFilePicker
+          onSave={handleImportPlan}
+          onClose={() => setShowImportFile(false)}
+        />
+      )}
+
       <main className="min-h-screen bg-[#0F0F1A] pb-32 pt-6 px-4">
         <div className="max-w-lg mx-auto">
           {/* Header */}
-          <div className="flex items-center justify-between mb-5">
-            <div>
+          <div className="flex items-start justify-between gap-3 mb-5">
+            <div className="min-w-0">
               <h1 className="text-2xl font-bold text-white">Musculation</h1>
               <p className="text-[#6B6B8A] text-sm mt-0.5">
                 {tab === 'sessions'
@@ -495,14 +576,16 @@ export default function WorkoutPage() {
                   : `${plans.length} plan${plans.length !== 1 ? 's' : ''}`}
               </p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
+              {/* Stats — icon only */}
               <Link
                 href="/workout/progression"
-                className="flex items-center gap-1.5 bg-[#1A1A2E] border border-[#2d1f5e] hover:border-[#7C3AED]/60 text-[#A78BFA] px-3 py-2.5 rounded-xl font-semibold text-sm transition-colors"
+                title="Progression"
+                className="w-9 h-9 bg-[#1A1A2E] border border-[#2d1f5e] hover:border-[#7C3AED]/60 text-[#A78BFA] rounded-xl flex items-center justify-center transition-colors"
               >
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-                Stats
               </Link>
+
               {tab === 'sessions' ? (
                 <Link
                   href="/workout/new"
@@ -512,13 +595,27 @@ export default function WorkoutPage() {
                   Nouvelle
                 </Link>
               ) : (
-                <button
-                  onClick={() => setEditingPlan('new')}
-                  className="flex items-center gap-2 bg-[#7C3AED] text-white px-4 py-2.5 rounded-xl font-semibold text-sm shadow-lg shadow-violet-900/40 hover:bg-[#6D28D9] transition-colors"
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                  Nouveau
-                </button>
+                <>
+                  {/* Import — icon only */}
+                  <button
+                    onClick={() => setShowImportFile(true)}
+                    title="Importer depuis un fichier"
+                    className="w-9 h-9 bg-[#1A1A2E] border border-[#2d1f5e] hover:border-[#7C3AED]/60 text-[#A78BFA] rounded-xl flex items-center justify-center transition-colors"
+                  >
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                      <polyline points="17 8 12 3 7 8"/>
+                      <line x1="12" y1="3" x2="12" y2="15"/>
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => setEditingPlan('new')}
+                    className="flex items-center gap-2 bg-[#7C3AED] text-white px-4 py-2.5 rounded-xl font-semibold text-sm shadow-lg shadow-violet-900/40 hover:bg-[#6D28D9] transition-colors"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    Nouveau
+                  </button>
+                </>
               )}
             </div>
           </div>
