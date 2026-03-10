@@ -226,6 +226,7 @@ export function FoodSearchModal({ initialMealType, onClose, onAdd }: FoodSearchM
                     if (quantityMode === 'grams') setGrams(Math.max(1, v));
                     else setServings(Math.max(0.5, v));
                   }}
+                  onFocus={(e) => e.target.select()}
                   className="w-full bg-[#0F0F1A] border border-[#2d1f5e] rounded-xl px-3 py-2.5 text-base text-white text-center focus:outline-none focus:border-[#7C3AED]"
                 />
                 <p className="text-[10px] text-[#6B6B8A] mt-1">
@@ -269,7 +270,7 @@ export function FoodSearchModal({ initialMealType, onClose, onAdd }: FoodSearchM
         {/* Results */}
         {!selected && results.length > 0 && (
           <div className="px-4 pt-3 space-y-2 pb-4">
-            <p className="text-[10px] text-[#6B6B8A] mb-2">{results.length} résultat{results.length > 1 ? 's' : ''} · Open Food Facts</p>
+            <p className="text-[10px] text-[#6B6B8A] mb-2">{results.length} résultat{results.length > 1 ? 's' : ''}</p>
             {results.map((r) => (
               <button
                 key={r.id}
@@ -277,10 +278,24 @@ export function FoodSearchModal({ initialMealType, onClose, onAdd }: FoodSearchM
                 className="w-full bg-[#1A1A2E] border border-[#2d1f5e] active:border-[#7C3AED]/60 rounded-2xl p-3 text-left transition-all"
               >
                 <div className="flex items-center gap-3">
-                  <ProductImage url={r.imageUrl} name={r.name} />
+                  {r.source === 'raw' ? (
+                    <div className="w-12 h-12 rounded-xl bg-[#0F0F1A] border border-[#2d1f5e] flex items-center justify-center shrink-0">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2z"/>
+                        <path d="M12 8v4l3 3"/>
+                      </svg>
+                    </div>
+                  ) : (
+                    <ProductImage url={r.imageUrl} name={r.name} />
+                  )}
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-white leading-tight line-clamp-2">{r.name}</p>
-                    {r.brand && <p className="text-xs text-[#A78BFA] mt-0.5 truncate">{r.brand}</p>}
+                    <div className="flex items-center gap-1.5 mb-0.5">
+                      <p className="text-sm font-medium text-white leading-tight line-clamp-2">{r.name}</p>
+                      {r.source === 'raw' && (
+                        <span className="shrink-0 text-[9px] font-semibold px-1.5 py-0.5 rounded-md bg-[#7C3AED]/20 text-[#A78BFA]">Brut</span>
+                      )}
+                    </div>
+                    {r.brand && <p className="text-xs text-[#A78BFA] mt-0 truncate">{r.brand}</p>}
                     {r.servingSize && <p className="text-[10px] text-[#6B6B8A] mt-0.5">Portion : {r.servingSize}</p>}
                   </div>
                   <div className="text-right shrink-0">
@@ -318,9 +333,9 @@ export function FoodSearchModal({ initialMealType, onClose, onAdd }: FoodSearchM
               <circle cx="11" cy="11" r="8" />
               <line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>
-            <p className="text-white font-semibold text-sm">Recherche dans Open Food Facts</p>
+            <p className="text-white font-semibold text-sm">Rechercher un aliment</p>
             <p className="text-[#6B6B8A] text-xs mt-1 leading-relaxed">
-              Millions de produits en grande surface avec photos, marques et valeurs nutritionnelles
+              Produits de supermarché (Open Food Facts) et aliments bruts (avocat, poulet, riz…)
             </p>
           </div>
         )}

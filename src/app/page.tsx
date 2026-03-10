@@ -101,6 +101,21 @@ export default function DashboardPage() {
         <WeeklyChart data={weekData} goal={goals.calories} />
       </Card>
 
+      {/* Stats teaser */}
+      <Link href="/stats" className="block mb-4">
+        <Card className="hover:border-[#7C3AED]/50 transition-all">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-sm font-semibold text-[#A78BFA] uppercase tracking-wider mb-0.5">Statistiques</h2>
+              <p className="text-xs text-[#6B6B8A]">Tendances · Objectifs · Répartition repas</p>
+            </div>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6B6B8A" strokeWidth="2" strokeLinecap="round">
+              <polyline points="9 18 15 12 9 6" />
+            </svg>
+          </div>
+        </Card>
+      </Link>
+
       {/* Body snapshot */}
       <Link href="/body" className="block mb-4">
         <Card className="hover:border-[#7C3AED]/50 transition-all">
