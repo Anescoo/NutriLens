@@ -1,7 +1,7 @@
 'use client';
 
 import { useSession, signOut } from 'next-auth/react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { useGoalsStore } from '@/store/goalsStore';
@@ -50,6 +50,17 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   return <h2 className="text-xs font-semibold text-[#A78BFA] uppercase tracking-widest mb-3">{children}</h2>;
 }
 
+interface ProfileData {
+  id: string;
+  name: string | null;
+  email: string;
+  bio: string | null;
+  avatarUrl: string | null;
+  isPublic: boolean;
+  followersCount: number;
+  followingCount: number;
+}
+
 export default function ProfilePage() {
   const { data: session } = useSession();
   const { goals, loadGoals } = useGoalsStore();
@@ -57,15 +68,27 @@ export default function ProfilePage() {
   const [meals, setMeals] = useState<MealRow[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Social profile state
+  const [profileData, setProfileData] = useState<ProfileData | null>(null);
+  const [editingBio, setEditingBio] = useState(false);
+  const [bioValue, setBioValue] = useState('');
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => { loadGoals(); }, [loadGoals]);
 
   useEffect(() => {
     Promise.all([
       fetch('/api/body').then((r) => r.json()),
       fetch('/api/meals').then((r) => r.json()),
-    ]).then(([body, mealData]) => {
+      fetch('/api/profile').then((r) => r.json()),
+    ]).then(([body, mealData, profile]) => {
       setMeasurements(Array.isArray(body) ? body : []);
       setMeals(Array.isArray(mealData) ? mealData : []);
+      if (profile && !profile.error) {
+        setProfileData(profile as ProfileData);
+        setBioValue(profile.bio ?? '');
+      }
       setLoading(false);
     }).catch(() => setLoading(false));
   }, []);
@@ -101,8 +124,8 @@ export default function ProfilePage() {
   const totalMeals = meals.length;
   const uniqueDays = new Set(meals.map((m) => m.date)).size;
 
-  const name = session?.user?.name || session?.user?.email?.split('@')[0] || 'Utilisateur';
-  const email = session?.user?.email || '';
+  const name = profileData?.name || session?.user?.name || session?.user?.email?.split('@')[0] || 'Utilisateur';
+  const email = profileData?.email || session?.user?.email || '';
   const initials = name.slice(0, 2).toUpperCase();
 
   const macroAvgs = [
@@ -112,20 +135,152 @@ export default function ProfilePage() {
     { label: 'Lipides', value: avgFat, goal: goals.fat, unit: 'g', color: '#06B6D4' },
   ];
 
+  async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAvatarUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append('avatar', file);
+      const res = await fetch('/api/profile/avatar', { method: 'POST', body: fd });
+      const data = await res.json() as { avatarUrl?: string };
+      if (data.avatarUrl) {
+        setProfileData((prev) => prev ? { ...prev, avatarUrl: data.avatarUrl! } : prev);
+      }
+    } finally {
+      setAvatarUploading(false);
+    }
+  }
+
+  async function handleBioBlur() {
+    setEditingBio(false);
+    await fetch('/api/profile', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ bio: bioValue }),
+    });
+    setProfileData((prev) => prev ? { ...prev, bio: bioValue } : prev);
+  }
+
+  async function handlePublicToggle(val: boolean) {
+    setProfileData((prev) => prev ? { ...prev, isPublic: val } : prev);
+    await fetch('/api/profile', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ isPublic: val }),
+    });
+  }
+
   return (
     <main className="px-4 pt-6 pb-28 max-w-lg mx-auto">
       <PageHeader title="Profil" subtitle="Ton espace personnel" />
 
       {/* Avatar + identity */}
-      <div className="bg-[#1A1A2E] border border-[#2d1f5e] rounded-2xl p-4 mb-4 flex items-center gap-4">
-        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#7C3AED] to-[#A78BFA] flex items-center justify-center text-2xl font-bold text-white shrink-0 select-none">
-          {initials}
+      <div className="bg-[#1A1A2E] border border-[#2d1f5e] rounded-2xl p-4 mb-4">
+        <div className="flex items-start gap-4">
+          {/* Avatar with upload button */}
+          <div className="relative shrink-0">
+            {profileData?.avatarUrl ? (
+              <img
+                src={profileData.avatarUrl}
+                alt={name}
+                className="w-16 h-16 rounded-2xl object-cover"
+              />
+            ) : (
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#7C3AED] to-[#A78BFA] flex items-center justify-center text-2xl font-bold text-white select-none">
+                {initials}
+              </div>
+            )}
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={avatarUploading}
+              className="absolute -bottom-1.5 -right-1.5 w-6 h-6 rounded-full bg-[#7C3AED] flex items-center justify-center shadow-lg border border-[#0F0F1A] transition-opacity hover:opacity-80"
+              aria-label="Changer la photo de profil"
+            >
+              {avatarUploading ? (
+                <svg className="animate-spin" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
+                  <circle cx="12" cy="12" r="10" strokeOpacity="0.25" />
+                  <path d="M12 2a10 10 0 0 1 10 10" />
+                </svg>
+              ) : (
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                  <circle cx="12" cy="13" r="4" />
+                </svg>
+              )}
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              onChange={handleAvatarChange}
+            />
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <p className="text-lg font-bold text-white truncate">{name}</p>
+            <p className="text-sm text-[#6B6B8A] truncate">{email}</p>
+            <p className="text-[10px] text-[#6B6B8A] mt-1">{uniqueDays} jour{uniqueDays > 1 ? 's' : ''} de suivi · {totalMeals} repas</p>
+          </div>
         </div>
-        <div className="min-w-0">
-          <p className="text-lg font-bold text-white truncate">{name}</p>
-          <p className="text-sm text-[#6B6B8A] truncate">{email}</p>
-          <p className="text-[10px] text-[#6B6B8A] mt-1">{uniqueDays} jour{uniqueDays > 1 ? 's' : ''} de suivi · {totalMeals} repas</p>
+
+        {/* Bio */}
+        <div className="mt-3">
+          {editingBio ? (
+            <textarea
+              autoFocus
+              value={bioValue}
+              onChange={(e) => setBioValue(e.target.value)}
+              onBlur={handleBioBlur}
+              rows={2}
+              className="w-full bg-[#0F0F1A] border border-[#2d1f5e] rounded-xl px-3 py-2 text-sm text-white resize-none focus:outline-none focus:border-[#7C3AED]"
+              placeholder="Écris ta bio…"
+            />
+          ) : (
+            <button
+              onClick={() => setEditingBio(true)}
+              className="w-full text-left text-sm"
+            >
+              {profileData?.bio ? (
+                <span className="text-white">{profileData.bio}</span>
+              ) : (
+                <span className="text-[#6B6B8A] italic">Ajouter une bio…</span>
+              )}
+            </button>
+          )}
         </div>
+
+        {/* Public profile toggle */}
+        <div className="flex items-center justify-between mt-3 pt-3 border-t border-[#2d1f5e]">
+          <span className="text-sm text-[#6B6B8A]">Profil public</span>
+          <button
+            onClick={() => handlePublicToggle(!(profileData?.isPublic ?? true))}
+            className={[
+              'relative w-10 h-5 rounded-full transition-colors duration-200',
+              (profileData?.isPublic ?? true) ? 'bg-[#7C3AED]' : 'bg-[#2d1f5e]',
+            ].join(' ')}
+            aria-label="Basculer profil public"
+          >
+            <span
+              className={[
+                'absolute top-[3px] w-[14px] h-[14px] rounded-full bg-white shadow transition-all duration-200',
+                (profileData?.isPublic ?? true) ? 'left-[23px]' : 'left-[3px]',
+              ].join(' ')}
+            />
+          </button>
+        </div>
+
+        {/* Followers/following */}
+        {profileData && (
+          <div className="mt-3 pt-3 border-t border-[#2d1f5e]">
+            <Link href="/community" className="text-sm text-[#A78BFA] hover:text-[#7C3AED] transition-colors">
+              <span className="font-semibold text-white">{profileData.followersCount}</span> abonné{profileData.followersCount !== 1 ? 's' : ''}&nbsp;·&nbsp;
+              <span className="font-semibold text-white">{profileData.followingCount}</span> abonnement{profileData.followingCount !== 1 ? 's' : ''}
+            </Link>
+          </div>
+        )}
       </div>
 
       {/* Body composition */}

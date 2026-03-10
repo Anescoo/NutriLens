@@ -43,26 +43,15 @@ const tabs = [
     ),
   },
   {
-    href: '/body',
-    label: 'Corps',
+    href: '/community',
+    label: 'Communauté',
     icon: (active: boolean) => (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active ? 2.2 : 1.8} strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="5" r="2" />
-        <path d="M12 7v6" />
-        <path d="M8 10h8" />
-        <path d="M10 13l-2 6" />
-        <path d="M14 13l2 6" />
-      </svg>
-    ),
-  },
-  {
-    href: '/goals',
-    label: 'Objectifs',
-    icon: (active: boolean) => (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active ? 2.2 : 1.8} strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="12" r="10" />
-        <circle cx="12" cy="12" r="6" />
-        <circle cx="12" cy="12" r="2" fill="currentColor" stroke="none" />
+        <circle cx="8" cy="12" r="3" />
+        <circle cx="16" cy="8" r="3" />
+        <circle cx="16" cy="16" r="3" />
+        <line x1="11" y1="12" x2="13" y2="9" />
+        <line x1="11" y1="12" x2="13" y2="15" />
       </svg>
     ),
   },
@@ -83,7 +72,16 @@ export function BottomNav() {
   const { data: session, status } = useSession();
 
   if (status === 'loading') return null;
-  if (!session || pathname === '/login' || pathname === '/signup' || pathname.startsWith('/share/')) return null;
+
+  // Hide nav for unauthenticated pages, share pages, and public profile pages
+  const isPublicProfilePage = /^\/profile\/[^/]+/.test(pathname);
+  if (
+    !session ||
+    pathname === '/login' ||
+    pathname === '/signup' ||
+    pathname.startsWith('/share/') ||
+    isPublicProfilePage
+  ) return null;
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 pb-[env(safe-area-inset-bottom)]">
