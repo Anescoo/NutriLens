@@ -13,6 +13,13 @@ interface UserPlan {
   isLiked: boolean;
 }
 
+interface ProfileStats {
+  nutritionStreak: number;
+  workoutStreak: number;
+  totalSessions: number;
+  totalVolumeKg: number;
+}
+
 interface PublicProfile {
   id: string;
   name: string | null;
@@ -22,6 +29,28 @@ interface PublicProfile {
   followersCount: number;
   followingCount: number;
   isFollowing: boolean;
+  stats: ProfileStats | null;
+}
+
+const FLAME_TIERS = [
+  { min: 30, color: '#FF0000', shadow: '#ff000066', label: '🔥' },
+  { min: 14, color: '#FF4500', shadow: '#ff450066', label: '🔥' },
+  { min: 7,  color: '#FF6B00', shadow: '#ff6b0066', label: '🔥' },
+  { min: 3,  color: '#FF9500', shadow: '#ff950066', label: '🔥' },
+  { min: 1,  color: '#FFB800', shadow: '#ffb80066', label: '🔥' },
+];
+
+function flameColor(count: number) {
+  for (const tier of FLAME_TIERS) {
+    if (count >= tier.min) return tier;
+  }
+  return null;
+}
+
+function formatVolume(kg: number): string {
+  if (kg >= 1_000_000) return `${(kg / 1_000_000).toFixed(1)}M kg`;
+  if (kg >= 1000) return `${(kg / 1000).toFixed(1)}k kg`;
+  return `${kg} kg`;
 }
 
 export default function PublicProfilePage({ params }: { params: Promise<{ userId: string }> }) {
@@ -52,7 +81,6 @@ export default function PublicProfilePage({ params }: { params: Promise<{ userId
       });
   }, [userId]);
 
-  // Load public plans once we know the profile is viewable
   useEffect(() => {
     if (!profile) return;
     const canView = profile.isPublic || profile.isFollowing || session?.user?.id === userId;
@@ -64,8 +92,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ userId
   }, [profile, userId, session?.user?.id]);
 
   async function handleFollow() {
-    if (!session) return;
-    if (!profile) return;
+    if (!session || !profile) return;
     setFollowLoading(true);
     try {
       if (profile.isFollowing) {
@@ -88,6 +115,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ userId
   const name = profile?.name ?? 'Utilisateur';
   const initials = name.slice(0, 2).toUpperCase();
   const canViewContent = profile?.isPublic || profile?.isFollowing || isOwnProfile;
+  const stats = profile?.stats ?? null;
 
   return (
     <main className="px-4 pt-6 pb-28 max-w-lg mx-auto">
@@ -124,11 +152,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ userId
               {/* Avatar */}
               <div className="shrink-0">
                 {profile.avatarUrl ? (
-                  <img
-                    src={profile.avatarUrl}
-                    alt={name}
-                    className="w-20 h-20 rounded-2xl object-cover"
-                  />
+                  <img src={profile.avatarUrl} alt={name} className="w-20 h-20 rounded-2xl object-cover" />
                 ) : (
                   <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-[#7C3AED] to-[#A78BFA] flex items-center justify-center text-3xl font-bold text-white select-none">
                     {initials}
@@ -141,8 +165,6 @@ export default function PublicProfilePage({ params }: { params: Promise<{ userId
                 {profile.bio && (
                   <p className="text-sm text-[#6B6B8A] mt-1 line-clamp-2">{profile.bio}</p>
                 )}
-
-                {/* Followers / following */}
                 <p className="text-sm text-[#6B6B8A] mt-2">
                   <span className="font-semibold text-white">{profile.followersCount}</span> abonné{profile.followersCount !== 1 ? 's' : ''}&nbsp;·&nbsp;
                   <span className="font-semibold text-white">{profile.followingCount}</span> abonnement{profile.followingCount !== 1 ? 's' : ''}
@@ -150,7 +172,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ userId
               </div>
             </div>
 
-            {/* Follow button — only show if logged in and not own profile */}
+            {/* Follow button */}
             {session && !isOwnProfile && (
               <button
                 onClick={handleFollow}
@@ -166,6 +188,74 @@ export default function PublicProfilePage({ params }: { params: Promise<{ userId
               </button>
             )}
           </div>
+
+          {/* Stats section — only for viewable profiles */}
+          {canViewContent && stats && (
+            <>
+              {/* Streaks */}
+              {(stats.nutritionStreak > 0 || stats.workoutStreak > 0) && (
+                <div className="bg-[#1A1A2E] border border-[#2d1f5e] rounded-2xl p-4 mb-4">
+                  <p className="text-xs font-semibold text-[#A78BFA] uppercase tracking-widest mb-3">Flammes</p>
+                  <div className="flex gap-3">
+                    {/* Nutrition streak */}
+                    {stats.nutritionStreak > 0 && (() => {
+                      const tier = flameColor(stats.nutritionStreak);
+                      return (
+                        <div className="flex-1 bg-[#0F0F1A] rounded-2xl p-3 text-center">
+                          <div className="text-2xl mb-1" style={{ filter: tier ? `drop-shadow(0 0 6px ${tier.shadow})` : undefined }}>🔥</div>
+                          <p className="text-xl font-black text-white leading-none" style={{ color: tier?.color ?? '#FFB800' }}>
+                            {stats.nutritionStreak}
+                            <span className="text-xs font-semibold ml-0.5 opacity-70 text-white">j.</span>
+                          </p>
+                          <p className="text-[10px] text-[#6B6B8A] mt-0.5">Nutrition</p>
+                        </div>
+                      );
+                    })()}
+
+                    {/* Workout streak */}
+                    {stats.workoutStreak > 0 && (() => {
+                      const tier = flameColor(stats.workoutStreak);
+                      return (
+                        <div className="flex-1 bg-[#0F0F1A] rounded-2xl p-3 text-center">
+                          <div className="text-2xl mb-1" style={{ filter: tier ? `drop-shadow(0 0 6px ${tier.shadow})` : undefined }}>🔥</div>
+                          <p className="text-xl font-black leading-none" style={{ color: tier?.color ?? '#FFB800' }}>
+                            {stats.workoutStreak}
+                            <span className="text-xs font-semibold ml-0.5 opacity-70 text-white">sem.</span>
+                          </p>
+                          <p className="text-[10px] text-[#6B6B8A] mt-0.5">Musculation</p>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                </div>
+              )}
+
+              {/* Workout numbers */}
+              {(stats.totalSessions > 0 || stats.totalVolumeKg > 0) && (
+                <div className="bg-[#1A1A2E] border border-[#2d1f5e] rounded-2xl p-4 mb-4">
+                  <p className="text-xs font-semibold text-[#A78BFA] uppercase tracking-widest mb-3">Stats musculation</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-[#0F0F1A] rounded-2xl p-3 text-center">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="mx-auto mb-1.5">
+                        <path d="M8 6v6m8-6v6M3 12h2m14 0h2M5 6H3m18 0h-2M5 18H3m18 0h-2"/>
+                        <rect x="5" y="9" width="14" height="6" rx="1"/>
+                      </svg>
+                      <p className="text-2xl font-black text-white leading-none">{stats.totalSessions}</p>
+                      <p className="text-[10px] text-[#6B6B8A] mt-0.5">séances</p>
+                    </div>
+                    <div className="bg-[#0F0F1A] rounded-2xl p-3 text-center">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A78BFA" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="mx-auto mb-1.5">
+                        <path d="M6 4v6a6 6 0 0 0 12 0V4"/>
+                        <line x1="4" y1="20" x2="20" y2="20"/>
+                      </svg>
+                      <p className="text-2xl font-black text-white leading-none">{formatVolume(stats.totalVolumeKg)}</p>
+                      <p className="text-[10px] text-[#6B6B8A] mt-0.5">volume total</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
 
           {/* Public plans */}
           {canViewContent && plans.length > 0 && (

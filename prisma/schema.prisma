@@ -24,6 +24,7 @@ model User {
   workoutSessions   WorkoutSession[]
   workoutPlans      WorkoutPlan[]
   pushSubscriptions PushSubscription[]
+  customMeals      CustomMeal[]
   following  UserFollow[] @relation("Follower")
   followers  UserFollow[] @relation("Following")
 }
@@ -133,6 +134,22 @@ model SharedPlan {
   planId    String?
   plan      WorkoutPlan? @relation(fields: [planId], references: [id], onDelete: SetNull)
   createdAt DateTime @default(now())
+}
+
+model CustomMeal {
+  id       String @id @default(cuid())
+  userId   String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name     String
+  calories Float
+  protein  Float
+  carbs    Float
+  fat      Float
+  grams    Float  @default(100)  // serving size in grams
+  items    String @default("[]") // JSON: [{name,grams,calories,protein,carbs,fat}]
+
+  @@index([userId])
 }
 
 model PushSubscription {

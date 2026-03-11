@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { Suspense, useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 
@@ -71,7 +71,7 @@ function UserItem({ user, onFollowChange }: { user: UserRow; onFollowChange: (id
   );
 }
 
-export default function ConnectionsPage() {
+function ConnectionsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const type = searchParams.get('type') ?? 'followers';
@@ -103,7 +103,6 @@ export default function ConnectionsPage() {
 
   return (
     <main className="px-4 pt-6 pb-28 max-w-lg mx-auto">
-      {/* Header */}
       <div className="flex items-center gap-3 mb-6">
         <button
           onClick={() => router.back()}
@@ -140,5 +139,17 @@ export default function ConnectionsPage() {
         </div>
       )}
     </main>
+  );
+}
+
+export default function ConnectionsPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex justify-center py-20">
+        <div className="w-8 h-8 border-2 border-[#7C3AED] border-t-transparent rounded-full animate-spin" />
+      </div>
+    }>
+      <ConnectionsContent />
+    </Suspense>
   );
 }
