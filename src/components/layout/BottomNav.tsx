@@ -6,18 +6,6 @@ import { useSession } from 'next-auth/react';
 
 const tabs = [
   {
-    href: '/',
-    label: 'Accueil',
-    icon: (active: boolean) => (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active ? 2.2 : 1.8} strokeLinecap="round" strokeLinejoin="round">
-        <rect x="3" y="3" width="7" height="7" rx="1.5" />
-        <rect x="14" y="3" width="7" height="7" rx="1.5" />
-        <rect x="3" y="14" width="7" height="7" rx="1.5" />
-        <rect x="14" y="14" width="7" height="7" rx="1.5" />
-      </svg>
-    ),
-  },
-  {
     href: '/journal',
     label: 'Journal',
     icon: (active: boolean) => (
@@ -88,8 +76,7 @@ export function BottomNav() {
       <div className="bg-[#1A1A2E]/90 backdrop-blur-xl border-t border-[#2d1f5e] px-2">
         <div className="flex items-center justify-around max-w-lg mx-auto">
           {tabs.map((tab) => {
-            const isActive =
-              tab.href === '/' ? pathname === '/' : pathname.startsWith(tab.href);
+            const isActive = pathname.startsWith(tab.href);
             return (
               <Link
                 key={tab.href}

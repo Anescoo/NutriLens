@@ -6,6 +6,7 @@ import Link from 'next/link';
 import type { WorkoutSession, WorkoutPlan, WorkoutPlanSession, GroupType } from '@/types';
 import { EXERCISES } from '@/lib/exercises';
 import { ImportFilePicker } from '@/components/workout/ImportFilePicker';
+import { StreakCelebration } from '@/components/ui/StreakCelebration';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -154,6 +155,7 @@ interface PlanEditorProps {
 
 function PlanEditor({ initial, existingPlans, onSave, onCancel }: PlanEditorProps) {
   const [name, setName] = useState(initial?.name ?? '');
+  const [isPublic, setIsPublic] = useState(initial?.isPublic ?? false);
   const [sessions, setSessions] = useState<WorkoutPlanSession[]>(
     initial?.sessions ?? [{ id: uid(), name: 'Séance A', exercises: [] }]
   );
@@ -406,8 +408,23 @@ function PlanEditor({ initial, existingPlans, onSave, onCancel }: PlanEditorProp
 
       {/* Sticky save button */}
       <div className="px-4 py-3 border-t border-[#2d1f5e] shrink-0 max-w-lg w-full mx-auto">
+        {/* Public toggle */}
         <button
-          onClick={() => canSave && onSave({ name: name.trim(), sessions })}
+          type="button"
+          onClick={() => setIsPublic((v) => !v)}
+          className="w-full flex items-center justify-between px-4 py-3 bg-[#1A1A2E] border border-[#2d1f5e] rounded-2xl mb-3"
+        >
+          <div className="text-left">
+            <p className="text-sm font-semibold text-white">Plan public</p>
+            <p className="text-xs text-[#6B6B8A] mt-0.5">Visible et consultable par la communauté</p>
+          </div>
+          <div className={['relative w-10 h-6 rounded-full transition-colors', isPublic ? 'bg-[#7C3AED]' : 'bg-[#2d1f5e]'].join(' ')}>
+            <span className={['absolute top-[3px] w-[14px] h-[14px] rounded-full bg-white shadow transition-all duration-200', isPublic ? 'left-[23px]' : 'left-[3px]'].join(' ')} />
+          </div>
+        </button>
+
+        <button
+          onClick={() => canSave && onSave({ name: name.trim(), sessions, isPublic })}
           disabled={!canSave}
           className="w-full py-3.5 bg-[#7C3AED] disabled:opacity-40 text-white rounded-2xl font-bold text-base transition-colors hover:bg-[#6D28D9]"
         >
@@ -474,11 +491,27 @@ function PlanViewModal({ plan, onClose }: { plan: WorkoutPlan; onClose: () => vo
   );
 }
 
-function PlanCard({ plan, onEdit, onDelete, onCopied }: { plan: WorkoutPlan; onEdit: () => void; onDelete: () => void; onCopied: () => void }) {
+function PlanCard({ plan, onEdit, onDelete, onCopied, onTogglePublic }: { plan: WorkoutPlan; onEdit: () => void; onDelete: () => void; onCopied: () => void; onTogglePublic: (pub: boolean) => void }) {
   const [confirming, setConfirming] = useState(false);
   const [viewing, setViewing] = useState(false);
   const [sharing, setSharing] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [togglingPublic, setTogglingPublic] = useState(false);
+
+  async function handleTogglePublic() {
+    setTogglingPublic(true);
+    try {
+      const res = await fetch(`/api/workout/plans/${plan.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: plan.name, sessions: plan.sessions, isPublic: !plan.isPublic }),
+      });
+      const updated = await res.json();
+      onTogglePublic(updated.isPublic);
+    } finally {
+      setTogglingPublic(false);
+    }
+  }
   const totalExercises = plan.sessions.reduce((s, sess) => s + sess.exercises.length, 0);
 
   async function handleShare() {
@@ -510,10 +543,18 @@ function PlanCard({ plan, onEdit, onDelete, onCopied }: { plan: WorkoutPlan; onE
             <p className="text-[#6B6B8A] text-sm mt-0.5">
               {plan.sessions.length} séance{plan.sessions.length > 1 ? 's' : ''} · {totalExercises} exercice{totalExercises > 1 ? 's' : ''}
             </p>
-            <div className="flex flex-wrap gap-1.5 mt-2">
+            <div className="flex flex-wrap items-center gap-1.5 mt-2">
               {plan.sessions.map((s) => (
                 <span key={s.id} className="text-[11px] bg-[#0F0F1A] text-[#A78BFA] px-2 py-0.5 rounded-full border border-[#2d1f5e]">{s.name}</span>
               ))}
+              <button
+                onClick={handleTogglePublic}
+                disabled={togglingPublic}
+                title={plan.isPublic ? 'Rendre privé' : 'Rendre public'}
+                className={['text-[10px] px-2 py-0.5 rounded-full border font-semibold transition-colors', plan.isPublic ? 'bg-[#7C3AED]/20 border-[#7C3AED]/40 text-[#A78BFA] hover:bg-[#7C3AED]/30' : 'bg-[#0F0F1A] border-[#2d1f5e] text-[#6B6B8A] hover:border-[#7C3AED]/40 hover:text-[#A78BFA]'].join(' ')}
+              >
+                {plan.isPublic ? '🌐 Public' : '🔒 Privé'}
+              </button>
             </div>
           </div>
           <div className="flex gap-2 shrink-0">
@@ -553,7 +594,7 @@ function PlanCard({ plan, onEdit, onDelete, onCopied }: { plan: WorkoutPlan; onE
   );
 }
 
-type Tab = 'sessions' | 'plans';
+type Tab = 'sessions' | 'plans' | 'discover';
 
 // ─── Copy toast ──────────────────────────────────────────────────────────────
 
@@ -592,10 +633,49 @@ export default function WorkoutPage() {
   const [editingPlan, setEditingPlan] = useState<WorkoutPlan | null | 'new'>(null);
   const [showImportFile, setShowImportFile] = useState(false);
 
+  // Discover state
+  const [discoverQuery, setDiscoverQuery] = useState('');
+  const [publicPlans, setPublicPlans] = useState<import('@/types').PublicWorkoutPlan[]>([]);
+  const [discoverLoading, setDiscoverLoading] = useState(false);
+  const discoverDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  async function loadPublicPlans(q: string) {
+    setDiscoverLoading(true);
+    try {
+      const res = await fetch(`/api/workout/plans/public?q=${encodeURIComponent(q)}`);
+      if (!res.ok) { setPublicPlans([]); return; }
+      const data = await res.json() as import('@/types').PublicWorkoutPlan[];
+      setPublicPlans(Array.isArray(data) ? data : []);
+    } catch {
+      setPublicPlans([]);
+    } finally {
+      setDiscoverLoading(false);
+    }
+  }
+
+  async function handleLikePlan(planId: string, liked: boolean) {
+    const res = await fetch(`/api/workout/plans/${planId}/like`, { method: liked ? 'DELETE' : 'POST' });
+    const { likesCount } = await res.json();
+    setPublicPlans((prev) => prev.map((p) => p.id === planId ? { ...p, isLiked: !liked, likesCount } : p));
+  }
+
+  const [workoutStreak, setWorkoutStreak] = useState<number | undefined>(undefined);
+
   useEffect(() => {
     fetch('/api/workout').then((r) => r.json()).then((s) => { setSessions(s); setSessionsLoading(false); });
     fetch('/api/workout/plans').then((r) => r.json()).then((p) => { setPlans(p); setPlansLoading(false); });
+    fetch('/api/streaks')
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => { if (d) setWorkoutStreak(d.workoutStreak); })
+      .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (tab !== 'discover') return;
+    if (discoverDebounce.current) clearTimeout(discoverDebounce.current);
+    discoverDebounce.current = setTimeout(() => void loadPublicPlans(discoverQuery), 300);
+    return () => { if (discoverDebounce.current) clearTimeout(discoverDebounce.current); };
+  }, [discoverQuery, tab]);
 
   async function handleDeleteSession(id: string) {
     await fetch('/api/workout/' + id, { method: 'DELETE' });
@@ -642,6 +722,7 @@ export default function WorkoutPage() {
 
   return (
     <>
+      <StreakCelebration workoutStreak={workoutStreak} />
       <CopyToast visible={copyToast} />
 
       {/* Plan editor overlay */}
@@ -732,6 +813,12 @@ export default function WorkoutPage() {
             >
               Plans
             </button>
+            <button
+              onClick={() => { setTab('discover'); void loadPublicPlans(discoverQuery); }}
+              className={['flex-1 py-2 rounded-xl text-sm font-semibold transition-all', tab === 'discover' ? 'bg-[#7C3AED] text-white' : 'text-[#6B6B8A] hover:text-white'].join(' ')}
+            >
+              Découvrir
+            </button>
           </div>
 
           {/* ── Séances tab ── */}
@@ -798,12 +885,90 @@ export default function WorkoutPage() {
                       onEdit={() => setEditingPlan(p)}
                       onDelete={() => handleDeletePlan(p.id)}
                       onCopied={showCopyToast}
+                      onTogglePublic={(pub) => setPlans((prev) => prev.map((pl) => pl.id === p.id ? { ...pl, isPublic: pub } : pl))}
                     />
                   ))}
                 </div>
               )}
             </>
           )}
+          {/* ── Découvrir tab ── */}
+          {tab === 'discover' && (
+            <>
+              {/* Search bar */}
+              <div className="relative mb-4">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6B6B8A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                  <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+                <input
+                  type="text"
+                  value={discoverQuery}
+                  onChange={(e) => setDiscoverQuery(e.target.value)}
+                  placeholder="Rechercher un programme…"
+                  className="w-full bg-[#1A1A2E] border border-[#2d1f5e] rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder-[#6B6B8A] focus:outline-none focus:border-[#7C3AED] transition-colors"
+                />
+                {discoverLoading && (
+                  <svg className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin w-4 h-4 text-[#7C3AED]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="12" r="10" strokeOpacity="0.25"/>
+                    <path d="M12 2a10 10 0 0 1 10 10"/>
+                  </svg>
+                )}
+              </div>
+
+              {!discoverLoading && publicPlans.length === 0 && (
+                <div className="text-center py-20">
+                  <div className="text-5xl mb-4">🔍</div>
+                  <p className="text-white font-semibold text-lg">Aucun programme trouvé</p>
+                  <p className="text-[#6B6B8A] text-sm mt-1">Sois le premier à rendre un plan public !</p>
+                </div>
+              )}
+
+              <div className="flex flex-col gap-3">
+                {publicPlans.map((p) => (
+                  <div key={p.id} className="bg-[#1A1A2E] border border-[#2d1f5e] rounded-2xl p-4">
+                    {/* Author */}
+                    <div className="flex items-center gap-2 mb-3">
+                      {p.authorAvatarUrl ? (
+                        <img src={p.authorAvatarUrl} alt={p.authorName ?? ''} className="w-7 h-7 rounded-lg object-cover shrink-0" />
+                      ) : (
+                        <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#7C3AED] to-[#A78BFA] flex items-center justify-center text-xs font-bold text-white shrink-0">
+                          {(p.authorName ?? 'U').slice(0, 2).toUpperCase()}
+                        </div>
+                      )}
+                      <Link href={`/profile/${p.authorId}`} className="text-xs text-[#A78BFA] hover:text-violet-300 transition-colors truncate">
+                        {p.authorName ?? 'Utilisateur'}
+                      </Link>
+                    </div>
+
+                    {/* Plan info */}
+                    <h3 className="text-white font-bold text-base truncate mb-0.5">{p.name}</h3>
+                    <p className="text-[#6B6B8A] text-sm mb-2">
+                      {p.sessions.length} séance{p.sessions.length > 1 ? 's' : ''} · {p.sessions.reduce((s, sess) => s + sess.exercises.length, 0)} exercices
+                    </p>
+                    <div className="flex flex-wrap gap-1.5 mb-3">
+                      {p.sessions.map((s) => (
+                        <span key={s.id} className="text-[11px] bg-[#0F0F1A] text-[#A78BFA] px-2 py-0.5 rounded-full border border-[#2d1f5e]">{s.name}</span>
+                      ))}
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex items-center justify-between">
+                      <button
+                        onClick={() => void handleLikePlan(p.id, p.isLiked)}
+                        className={['flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all', p.isLiked ? 'bg-[#7C3AED]/20 border border-[#7C3AED]/40 text-[#A78BFA]' : 'border border-[#2d1f5e] text-[#6B6B8A] hover:border-[#7C3AED]/40 hover:text-[#A78BFA]'].join(' ')}
+                      >
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill={p.isLiked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                        </svg>
+                        {p.likesCount} j&apos;aime
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+
         </div>
       </main>
     </>

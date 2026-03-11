@@ -31,6 +31,7 @@ export async function POST(req: NextRequest) {
       name: body.name,
       sessions: JSON.stringify(body.sessions ?? []),
       createdAt: BigInt(Date.now()),
+      isPublic: body.isPublic ?? false,
     },
   });
 

@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
 
 import type { WorkoutSession, WorkoutExercise, WorkoutSet } from '@/types';
+import { StreakCelebration } from '@/components/ui/StreakCelebration';
 
 function formatDate(dateStr: string) {
   const d = new Date(dateStr + 'T12:00:00');
@@ -314,9 +315,17 @@ export default function WorkoutSessionPage() {
   const [loading, setLoading] = useState(true);
   const [completing, setCompleting] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [workoutStreak, setWorkoutStreak] = useState<number | undefined>(undefined);
 
   // Holds the latest saved snapshot so completeSession never reads stale state
   const latestRef = useRef<WorkoutSession | null>(null);
+
+  useEffect(() => {
+    fetch('/api/streaks')
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => { if (d) setWorkoutStreak(d.workoutStreak); })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     async function load() {
@@ -408,6 +417,8 @@ export default function WorkoutSessionPage() {
   }
 
   return (
+    <>
+    <StreakCelebration workoutStreak={workoutStreak} />
     <main className="min-h-screen bg-[#0F0F1A] pb-32">
       {/* Sticky header */}
       <div className="sticky top-0 z-20 bg-[#0F0F1A]/90 backdrop-blur border-b border-[#2d1f5e]">
@@ -537,5 +548,6 @@ export default function WorkoutSessionPage() {
         )}
       </div>
     </main>
+    </>
   );
 }

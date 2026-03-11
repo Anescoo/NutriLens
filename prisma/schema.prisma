@@ -70,10 +70,11 @@ model UserGoals {
   userId   String @unique
   user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  calories Float @default(2000)
-  protein  Float @default(100)
-  carbs    Float @default(250)
-  fat      Float @default(65)
+  calories         Float @default(2000)
+  protein          Float @default(100)
+  carbs            Float @default(250)
+  fat              Float @default(65)
+  workoutFrequency Int   @default(3)
 }
 
 model WorkoutSession {
@@ -101,8 +102,19 @@ model WorkoutPlan {
   isPublic  Boolean @default(false)
 
   sharedLinks SharedPlan[]
+  likes       PlanLike[]
 
   @@index([userId])
+  @@index([isPublic])
+}
+
+model PlanLike {
+  userId String
+  planId String
+  plan   WorkoutPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  savedAt DateTime @default(now())
+
+  @@id([userId, planId])
 }
 
 model UserFollow {

@@ -7,6 +7,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { useGoalsStore } from '@/store/goalsStore';
 import { NotificationSection } from '@/components/profile/NotificationSection';
 import { ExportSection } from '@/components/profile/ExportSection';
+import { StreakFlame } from '@/components/ui/StreakFlame';
 import type { BodyMeasurement } from '@/types';
 
 function calcBMI(weight: number, height: number) {
@@ -68,6 +69,9 @@ export default function ProfilePage() {
   const [meals, setMeals] = useState<MealRow[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const [streaks, setStreaks] = useState({ nutritionStreak: 0, workoutStreak: 0 });
+  const [workoutFrequency, setWorkoutFrequency] = useState(3);
+
   // Social profile state
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [editingBio, setEditingBio] = useState(false);
@@ -82,13 +86,17 @@ export default function ProfilePage() {
       fetch('/api/body').then((r) => r.json()),
       fetch('/api/meals').then((r) => r.json()),
       fetch('/api/profile').then((r) => r.json()),
-    ]).then(([body, mealData, profile]) => {
+      fetch('/api/streaks').then((r) => r.ok ? r.json() : { nutritionStreak: 0, workoutStreak: 0 }),
+    ]).then(([body, mealData, profile, streakData]) => {
       setMeasurements(Array.isArray(body) ? body : []);
       setMeals(Array.isArray(mealData) ? mealData : []);
       if (profile && !profile.error) {
         setProfileData(profile as ProfileData);
         setBioValue(profile.bio ?? '');
       }
+      const sd = streakData as { nutritionStreak: number; workoutStreak: number; workoutFrequency?: number };
+      setStreaks({ nutritionStreak: sd.nutritionStreak, workoutStreak: sd.workoutStreak });
+      if (sd.workoutFrequency) setWorkoutFrequency(sd.workoutFrequency);
       setLoading(false);
     }).catch(() => setLoading(false));
   }, []);
@@ -274,13 +282,72 @@ export default function ProfilePage() {
 
         {/* Followers/following */}
         {profileData && (
-          <div className="mt-3 pt-3 border-t border-[#2d1f5e]">
-            <Link href="/community" className="text-sm text-[#A78BFA] hover:text-[#7C3AED] transition-colors">
-              <span className="font-semibold text-white">{profileData.followersCount}</span> abonné{profileData.followersCount !== 1 ? 's' : ''}&nbsp;·&nbsp;
-              <span className="font-semibold text-white">{profileData.followingCount}</span> abonnement{profileData.followingCount !== 1 ? 's' : ''}
+          <div className="mt-3 pt-3 border-t border-[#2d1f5e] flex items-center gap-4">
+            <Link href="/profile/connections?type=followers" className="text-sm hover:opacity-80 transition-opacity">
+              <span className="font-semibold text-white">{profileData.followersCount}</span>
+              <span className="text-[#6B6B8A] ml-1">abonné{profileData.followersCount !== 1 ? 's' : ''}</span>
+            </Link>
+            <span className="text-[#2d1f5e]">·</span>
+            <Link href="/profile/connections?type=following" className="text-sm hover:opacity-80 transition-opacity">
+              <span className="font-semibold text-white">{profileData.followingCount}</span>
+              <span className="text-[#6B6B8A] ml-1">abonnement{profileData.followingCount !== 1 ? 's' : ''}</span>
             </Link>
           </div>
         )}
+      </div>
+
+      {/* Streaks */}
+      <div className="bg-[#1A1A2E] border border-[#2d1f5e] rounded-2xl p-4 mb-4">
+        <div className="flex items-center justify-between mb-1">
+          <SectionTitle>Séries actives</SectionTitle>
+          {/* DEV — cycle through streak tiers to preview animations */}
+          <button
+            onClick={() => {
+              const steps = [0, 1, 3, 7, 14, 30];
+              const next = (n: number) => steps[(steps.indexOf(steps.find((s) => s >= n) ?? 0) + 1) % steps.length];
+              setStreaks((s) => ({ nutritionStreak: next(s.nutritionStreak), workoutStreak: next(s.workoutStreak) }));
+            }}
+            className="text-[10px] text-[#6B6B8A] border border-[#2d1f5e] rounded-lg px-2 py-1 hover:border-[#7C3AED] hover:text-[#A78BFA] transition-all"
+          >
+            test 🧪
+          </button>
+        </div>
+        <div className="flex items-center justify-around py-2">
+          <StreakFlame count={streaks.nutritionStreak} label="Nutrition" unit="j." />
+          <div className="w-px self-stretch bg-[#2d1f5e]" />
+          <StreakFlame count={streaks.workoutStreak} label="Musculation" unit="sem." />
+        </div>
+        {/* Workout frequency selector */}
+        <div className="flex items-center justify-between mt-3 pt-3 border-t border-[#2d1f5e]">
+          <p className="text-[11px] text-[#6B6B8A]">Objectif musculation</p>
+          <div className="flex items-center gap-1">
+            {[1, 2, 3, 4, 5, 6].map((n) => (
+              <button
+                key={n}
+                onClick={async () => {
+                  setWorkoutFrequency(n);
+                  await fetch('/api/goals', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ workoutFrequency: n }),
+                  });
+                }}
+                className={[
+                  'w-7 h-7 rounded-lg text-xs font-bold transition-all',
+                  workoutFrequency === n
+                    ? 'bg-[#7C3AED] text-white'
+                    : 'bg-[#0F0F1A] border border-[#2d1f5e] text-[#6B6B8A] hover:border-[#7C3AED]/60 hover:text-[#A78BFA]',
+                ].join(' ')}
+              >
+                {n}
+              </button>
+            ))}
+            <span className="text-[11px] text-[#6B6B8A] ml-1">/ sem.</span>
+          </div>
+        </div>
+        <p className="text-center text-[10px] text-[#6B6B8A] mt-2">
+          Nutrition : jours consécutifs · Musculation : semaines consécutives
+        </p>
       </div>
 
       {/* Body composition */}
@@ -319,7 +386,7 @@ export default function ProfilePage() {
       <div className="bg-[#1A1A2E] border border-[#2d1f5e] rounded-2xl p-4 mb-4">
         <div className="flex items-center justify-between mb-3">
           <SectionTitle>Nutrition — 7 derniers jours</SectionTitle>
-          <Link href="/journal" className="text-[10px] text-[#7C3AED] hover:text-[#A78BFA] transition-colors">Journal</Link>
+          <Link href="/stats" className="text-[10px] text-[#7C3AED] hover:text-[#A78BFA] transition-colors">Voir les stats →</Link>
         </div>
         {loading ? (
           <p className="text-[#6B6B8A] text-sm text-center py-4">Chargement…</p>

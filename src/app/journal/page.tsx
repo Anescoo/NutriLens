@@ -4,11 +4,12 @@ import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import { MealSection } from '@/components/journal/MealSection';
 import { FoodSearchModal } from '@/components/journal/FoodSearchModal';
-import { Card } from '@/components/ui/Card';
+import { MacroRings } from '@/components/journal/MacroRings';
+import { StreakCelebration } from '@/components/ui/StreakCelebration';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { useNutritionStore, createMealEntry } from '@/store/nutritionStore';
 import { useGoalsStore } from '@/store/goalsStore';
-import { formatDateDisplay, todayString, goalPercent } from '@/lib/nutritionCalc';
+import { formatDateDisplay, todayString } from '@/lib/nutritionCalc';
 import type { MealType, FoodItem } from '@/types';
 import type { SearchResult } from '@/app/api/search/route';
 
@@ -18,11 +19,19 @@ export default function JournalPage() {
   const { entries, totals, currentDate, loadDay, removeEntry, addEntry, setDate } = useNutritionStore();
   const { goals } = useGoalsStore();
   const [searchMealType, setSearchMealType] = useState<MealType | null>(null);
+  const [nutritionStreak, setNutritionStreak] = useState<number | undefined>(undefined);
   const dateInputRef = useRef<HTMLInputElement>(null);
 
   // Run on every mount (navigation remounts this component)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { loadDay(currentDate || todayString()); }, []);
+
+  useEffect(() => {
+    fetch('/api/streaks')
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => { if (d) setNutritionStreak(d.nutritionStreak); })
+      .catch(() => {});
+  }, []);
   // Also re-run when user changes the date
   useEffect(() => { loadDay(currentDate); }, [currentDate, loadDay]);
 
@@ -65,6 +74,7 @@ export default function JournalPage() {
 
   return (
     <>
+      <StreakCelebration nutritionStreak={nutritionStreak} />
       {searchMealType && (
         <FoodSearchModal
           initialMealType={searchMealType}
@@ -77,18 +87,38 @@ export default function JournalPage() {
         <PageHeader
           title="Journal"
           action={
-            <Link
-              href="/scan"
-              className="flex items-center gap-1.5 bg-[#1A1A2E] border border-[#2d1f5e] hover:border-[#7C3AED]/60 rounded-xl px-3 py-2 transition-all group"
-            >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#A78BFA] group-hover:text-[#7C3AED] transition-colors">
-                <path d="M3 7V5a2 2 0 0 1 2-2h2" /><path d="M17 3h2a2 2 0 0 1 2 2v2" />
-                <path d="M21 17v2a2 2 0 0 1-2 2h-2" /><path d="M7 21H5a2 2 0 0 1-2-2v-2" />
-                <circle cx="12" cy="12" r="3.5" />
-              </svg>
-              <span className="text-xs font-semibold text-[#A78BFA] group-hover:text-[#7C3AED] transition-colors">Scanner</span>
-            </Link>
+            <div className="flex items-center gap-2">
+              <Link
+                href="/stats"
+                className="flex items-center gap-1.5 bg-[#1A1A2E] border border-[#2d1f5e] hover:border-[#7C3AED]/60 rounded-xl px-3 py-2 transition-all group"
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#A78BFA] group-hover:text-[#7C3AED] transition-colors">
+                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                </svg>
+                <span className="text-xs font-semibold text-[#A78BFA] group-hover:text-[#7C3AED] transition-colors">Stats</span>
+              </Link>
+              <Link
+                href="/scan"
+                className="flex items-center gap-1.5 bg-[#1A1A2E] border border-[#2d1f5e] hover:border-[#7C3AED]/60 rounded-xl px-3 py-2 transition-all group"
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#A78BFA] group-hover:text-[#7C3AED] transition-colors">
+                  <path d="M3 7V5a2 2 0 0 1 2-2h2" /><path d="M17 3h2a2 2 0 0 1 2 2v2" />
+                  <path d="M21 17v2a2 2 0 0 1-2 2h-2" /><path d="M7 21H5a2 2 0 0 1-2-2v-2" />
+                  <circle cx="12" cy="12" r="3.5" />
+                </svg>
+                <span className="text-xs font-semibold text-[#A78BFA] group-hover:text-[#7C3AED] transition-colors">Scanner</span>
+              </Link>
+            </div>
           }
+        />
+
+        {/* Macro rings — always visible */}
+        <MacroRings
+          calories={totals.calories}
+          protein={totals.protein}
+          carbs={totals.carbs}
+          fat={totals.fat}
+          goals={goals}
         />
 
         {/* Date navigation — tap center to open date picker */}
@@ -134,38 +164,6 @@ export default function JournalPage() {
             </svg>
           </button>
         </div>
-
-        {/* Daily summary */}
-        {entries.length > 0 && (
-          <Card className="mb-4">
-            <div className="grid grid-cols-4 gap-3 text-center">
-              {[
-                { label: 'kcal', value: totals.calories, goal: goals.calories, color: '#EC4899' },
-                { label: 'protein', value: `${totals.protein}g`, goal: goals.protein, color: '#7C3AED' },
-                { label: 'carbs', value: `${totals.carbs}g`, goal: goals.carbs, color: '#A78BFA' },
-                { label: 'fat', value: `${totals.fat}g`, goal: goals.fat, color: '#06B6D4' },
-              ].map((item) => {
-                const numVal = typeof item.value === 'number' ? item.value : parseFloat(item.value);
-                const pct = goalPercent(numVal, item.goal);
-                return (
-                  <div key={item.label} className="bg-[#0F0F1A] rounded-xl p-2.5">
-                    <p className="text-white font-bold text-sm">{item.value}</p>
-                    <p className="text-[10px] mt-0.5" style={{ color: item.color }}>{item.label}</p>
-                    <div className="mt-1.5 h-1 rounded-full bg-[#2d1f5e] overflow-hidden">
-                      <div
-                        className="h-full rounded-full"
-                        style={{
-                          width: `${Math.min(100, pct)}%`,
-                          background: pct > 100 ? '#EF4444' : item.color,
-                        }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </Card>
-        )}
 
         {/* Meal sections — always shown */}
         <div className="space-y-3">

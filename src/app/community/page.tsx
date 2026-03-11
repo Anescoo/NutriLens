@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSession } from 'next-auth/react';
+import Link from 'next/link';
 import { PageHeader } from '@/components/layout/PageHeader';
 
 interface UserResult {
@@ -50,25 +51,27 @@ function UserCard({
 
   return (
     <div className="flex items-center gap-3 py-3">
-      {user.avatarUrl ? (
-        <img
-          src={user.avatarUrl}
-          alt={name}
-          className="w-11 h-11 rounded-xl object-cover shrink-0"
-        />
-      ) : (
-        <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-[#7C3AED] to-[#A78BFA] flex items-center justify-center text-base font-bold text-white shrink-0 select-none">
-          {initials}
-        </div>
-      )}
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-white truncate">{name}</p>
-        {user.bio ? (
-          <p className="text-xs text-[#6B6B8A] truncate">{user.bio}</p>
+      <Link href={`/profile/${user.id}`} className="flex items-center gap-3 flex-1 min-w-0">
+        {user.avatarUrl ? (
+          <img
+            src={user.avatarUrl}
+            alt={name}
+            className="w-11 h-11 rounded-xl object-cover shrink-0"
+          />
         ) : (
-          <p className="text-xs text-[#6B6B8A]">{user.followersCount} abonné{user.followersCount !== 1 ? 's' : ''}</p>
+          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-[#7C3AED] to-[#A78BFA] flex items-center justify-center text-base font-bold text-white shrink-0 select-none">
+            {initials}
+          </div>
         )}
-      </div>
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-white truncate">{name}</p>
+          {user.bio ? (
+            <p className="text-xs text-[#6B6B8A] truncate">{user.bio}</p>
+          ) : (
+            <p className="text-xs text-[#6B6B8A]">{user.followersCount} abonné{user.followersCount !== 1 ? 's' : ''}</p>
+          )}
+        </div>
+      </Link>
       <button
         onClick={handleFollow}
         disabled={loading}
@@ -161,14 +164,14 @@ export default function CommunityPage() {
         <div className="bg-[#1A1A2E] border border-[#2d1f5e] rounded-2xl p-4 mb-4">
           <h2 className="text-xs font-semibold text-[#A78BFA] uppercase tracking-widest mb-3">Mon réseau</h2>
           <div className="flex items-center divide-x divide-[#2d1f5e]">
-            <div className="flex-1 text-center pr-4">
+            <Link href="/profile/connections?type=followers" className="flex-1 text-center pr-4 hover:opacity-80 transition-opacity">
               <p className="text-2xl font-bold text-white">{networkStats.followersCount}</p>
               <p className="text-xs text-[#6B6B8A] mt-0.5">Abonné{networkStats.followersCount !== 1 ? 's' : ''}</p>
-            </div>
-            <div className="flex-1 text-center pl-4">
+            </Link>
+            <Link href="/profile/connections?type=following" className="flex-1 text-center pl-4 hover:opacity-80 transition-opacity">
               <p className="text-2xl font-bold text-white">{networkStats.followingCount}</p>
               <p className="text-xs text-[#6B6B8A] mt-0.5">Abonnement{networkStats.followingCount !== 1 ? 's' : ''}</p>
-            </div>
+            </Link>
           </div>
         </div>
       )}

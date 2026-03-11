@@ -17,6 +17,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     data: {
       name: body.name,
       sessions: JSON.stringify(body.sessions ?? []),
+      ...(typeof body.isPublic === 'boolean' ? { isPublic: body.isPublic } : {}),
     },
   });
 

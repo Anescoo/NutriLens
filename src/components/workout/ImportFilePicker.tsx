@@ -51,6 +51,7 @@ export function ImportFilePicker({ onSave, onClose }: Props) {
           name: s.name,
           exercises: s.exercises.map((e) => ({ id: uid(), name: e.name, sets: e.sets, ...(e.reps !== undefined && { reps: e.reps }), ...(e.time !== undefined && { time: e.time }) })),
         })),
+        isPublic: false,
       });
       onClose();
     } catch {

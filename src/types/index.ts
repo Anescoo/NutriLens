@@ -129,4 +129,14 @@ export interface WorkoutPlan {
   name: string;          // "PPL", "Full Body", etc.
   sessions: WorkoutPlanSession[];
   createdAt: number;     // Unix ms
+  isPublic: boolean;
+}
+
+export interface PublicWorkoutPlan extends WorkoutPlan {
+  authorName: string | null;
+  authorAvatarUrl: string | null;
+  authorId: string;
+  likesCount: number;
+  isLiked: boolean;
+  isSaved: boolean;
 }

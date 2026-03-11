@@ -3,6 +3,15 @@
 import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
+import type { WorkoutPlanSession } from '@/types';
+
+interface UserPlan {
+  id: string;
+  name: string;
+  sessions: WorkoutPlanSession[];
+  likesCount: number;
+  isLiked: boolean;
+}
 
 interface PublicProfile {
   id: string;
@@ -24,6 +33,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ userId
   const [loading, setLoading] = useState(true);
   const [followLoading, setFollowLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [plans, setPlans] = useState<UserPlan[]>([]);
 
   useEffect(() => {
     fetch(`/api/social/profile/${userId}`)
@@ -41,6 +51,17 @@ export default function PublicProfilePage({ params }: { params: Promise<{ userId
         setLoading(false);
       });
   }, [userId]);
+
+  // Load public plans once we know the profile is viewable
+  useEffect(() => {
+    if (!profile) return;
+    const canView = profile.isPublic || profile.isFollowing || session?.user?.id === userId;
+    if (!canView) return;
+    fetch(`/api/workout/plans/public?authorId=${userId}`)
+      .then((r) => r.ok ? r.json() : [])
+      .then((data: UserPlan[]) => setPlans(Array.isArray(data) ? data : []))
+      .catch(() => {});
+  }, [profile, userId, session?.user?.id]);
 
   async function handleFollow() {
     if (!session) return;
@@ -145,6 +166,41 @@ export default function PublicProfilePage({ params }: { params: Promise<{ userId
               </button>
             )}
           </div>
+
+          {/* Public plans */}
+          {canViewContent && plans.length > 0 && (
+            <div className="mb-4">
+              <h2 className="text-xs font-semibold text-[#A78BFA] uppercase tracking-widest mb-3">
+                Programmes publics
+              </h2>
+              <div className="flex flex-col gap-3">
+                {plans.map((plan) => {
+                  const totalExercises = plan.sessions.reduce((s, sess) => s + sess.exercises.length, 0);
+                  return (
+                    <div key={plan.id} className="bg-[#1A1A2E] border border-[#2d1f5e] rounded-2xl p-4">
+                      <p className="text-white font-bold text-base truncate mb-0.5">{plan.name}</p>
+                      <p className="text-[#6B6B8A] text-sm mb-2">
+                        {plan.sessions.length} séance{plan.sessions.length > 1 ? 's' : ''} · {totalExercises} exercice{totalExercises > 1 ? 's' : ''}
+                      </p>
+                      <div className="flex flex-wrap gap-1.5 mb-3">
+                        {plan.sessions.map((s) => (
+                          <span key={s.id} className="text-[11px] bg-[#0F0F1A] text-[#A78BFA] px-2 py-0.5 rounded-full border border-[#2d1f5e]">
+                            {s.name}
+                          </span>
+                        ))}
+                      </div>
+                      <div className="flex items-center gap-1.5 text-xs text-[#6B6B8A]">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill={plan.isLiked ? '#A78BFA' : 'none'} stroke={plan.isLiked ? '#A78BFA' : 'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                        </svg>
+                        {plan.likesCount} j&apos;aime
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Private profile message */}
           {!canViewContent && (
