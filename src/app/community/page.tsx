@@ -30,6 +30,24 @@ interface Conversation {
   isLastMessageMine: boolean;
 }
 
+type LeaderboardMetric = 'sessions' | 'volume' | 'streak_nutrition' | 'streak_workout';
+
+interface LeaderboardEntry {
+  rank: number;
+  userId: string;
+  name: string | null;
+  avatarUrl: string | null;
+  value: number;
+  isCurrentUser: boolean;
+}
+
+const LEADERBOARD_METRICS: { key: LeaderboardMetric; label: string; unit: string; icon: string }[] = [
+  { key: 'sessions',         label: 'Séances',       unit: 'séances', icon: '🏋️' },
+  { key: 'volume',           label: 'Volume',         unit: 'kg',      icon: '⚡' },
+  { key: 'streak_nutrition', label: 'Streak nutri',   unit: 'jours',   icon: '🔥' },
+  { key: 'streak_workout',   label: 'Streak muscu',   unit: 'sem.',    icon: '📅' },
+];
+
 function UserCard({
   user,
   onFollowChange,
@@ -133,6 +151,10 @@ export default function CommunityPage() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const [leaderboardMetric, setLeaderboardMetric] = useState<LeaderboardMetric>('sessions');
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [leaderboardLoading, setLeaderboardLoading] = useState(false);
+
   // Load network stats
   useEffect(() => {
     if (!session?.user?.id) return;
@@ -157,6 +179,16 @@ export default function CommunityPage() {
       .then((data: Conversation[]) => setConversations(Array.isArray(data) ? data : []))
       .catch(() => {});
   }, [session?.user?.id]);
+
+  // Load leaderboard
+  useEffect(() => {
+    setLeaderboardLoading(true);
+    fetch(`/api/social/leaderboard?metric=${leaderboardMetric}`)
+      .then((r) => r.json())
+      .then((data: LeaderboardEntry[]) => setLeaderboard(Array.isArray(data) ? data : []))
+      .catch(() => setLeaderboard([]))
+      .finally(() => setLeaderboardLoading(false));
+  }, [leaderboardMetric]);
 
   const doSearch = useCallback(async (q: string) => {
     if (q.length < 2) {
@@ -284,6 +316,110 @@ export default function CommunityPage() {
           )}
         </div>
       )}
+
+      {/* Leaderboard */}
+      <div className="bg-[#1A1A2E] border border-[#2d1f5e] rounded-2xl p-4 mb-4">
+        <h2 className="text-xs font-semibold text-[#A78BFA] uppercase tracking-widest mb-3">Classement</h2>
+
+        {/* Metric tabs */}
+        <div className="flex gap-1.5 mb-4 overflow-x-auto pb-0.5 scrollbar-none">
+          {LEADERBOARD_METRICS.map((m) => (
+            <button
+              key={m.key}
+              onClick={() => setLeaderboardMetric(m.key)}
+              className={[
+                'px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all shrink-0',
+                leaderboardMetric === m.key
+                  ? 'bg-[#7C3AED] text-white'
+                  : 'bg-[#0F0F1A] text-[#6B6B8A] border border-[#2d1f5e] hover:border-[#7C3AED]/50 hover:text-[#A78BFA]',
+              ].join(' ')}
+            >
+              {m.icon} {m.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Entries */}
+        {leaderboardLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <svg className="animate-spin w-5 h-5 text-[#7C3AED]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="10" strokeOpacity="0.25" />
+              <path d="M12 2a10 10 0 0 1 10 10" />
+            </svg>
+          </div>
+        ) : leaderboard.length === 0 ? (
+          <div className="text-center py-6">
+            <p className="text-[#6B6B8A] text-sm">Aucune donnée disponible</p>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-1.5">
+            {leaderboard.map((entry, idx) => {
+              const metricConfig = LEADERBOARD_METRICS.find((m) => m.key === leaderboardMetric)!;
+              const isGap = idx > 0 && leaderboard[idx - 1].rank + 1 < entry.rank;
+              const medal = entry.rank === 1 ? '🥇' : entry.rank === 2 ? '🥈' : entry.rank === 3 ? '🥉' : null;
+              const name = entry.name ?? 'Utilisateur';
+              const initials = name.slice(0, 2).toUpperCase();
+              return (
+                <div key={entry.userId}>
+                  {isGap && (
+                    <div className="flex items-center gap-2 py-1">
+                      <div className="flex-1 border-t border-dashed border-[#2d1f5e]" />
+                      <span className="text-[10px] text-[#6B6B8A]">…</span>
+                      <div className="flex-1 border-t border-dashed border-[#2d1f5e]" />
+                    </div>
+                  )}
+                  <Link
+                    href={`/profile/${entry.userId}`}
+                    className={[
+                      'flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all',
+                      entry.isCurrentUser
+                        ? 'bg-[#7C3AED]/15 border border-[#7C3AED]/40'
+                        : 'bg-[#0F0F1A] border border-transparent hover:border-[#2d1f5e]',
+                    ].join(' ')}
+                  >
+                    {/* Rank */}
+                    <div className="w-7 shrink-0 text-center">
+                      {medal ? (
+                        <span className="text-base leading-none">{medal}</span>
+                      ) : (
+                        <span className={['text-xs font-bold', entry.isCurrentUser ? 'text-[#A78BFA]' : 'text-[#6B6B8A]'].join(' ')}>
+                          #{entry.rank}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Avatar */}
+                    {entry.avatarUrl ? (
+                      <img src={entry.avatarUrl} alt={name} className="w-8 h-8 rounded-lg object-cover shrink-0" />
+                    ) : (
+                      <div className={[
+                        'w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold text-white shrink-0 select-none',
+                        entry.isCurrentUser ? 'bg-gradient-to-br from-[#7C3AED] to-[#A78BFA]' : 'bg-[#1A1A2E] border border-[#2d1f5e]',
+                      ].join(' ')}>
+                        {initials}
+                      </div>
+                    )}
+
+                    {/* Name */}
+                    <p className={['flex-1 text-sm font-semibold truncate', entry.isCurrentUser ? 'text-white' : 'text-[#A78BFA]'].join(' ')}>
+                      {name}
+                      {entry.isCurrentUser && <span className="ml-1.5 text-[10px] font-normal text-[#6B6B8A]">Vous</span>}
+                    </p>
+
+                    {/* Value */}
+                    <div className="text-right shrink-0">
+                      <span className={['text-sm font-bold', entry.rank <= 3 ? 'text-white' : 'text-[#A78BFA]'].join(' ')}>
+                        {entry.value.toLocaleString('fr-FR')}
+                      </span>
+                      <span className="ml-1 text-[10px] text-[#6B6B8A]">{metricConfig.unit}</span>
+                    </div>
+                  </Link>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
 
       {/* Search section */}
       <div className="bg-[#1A1A2E] border border-[#2d1f5e] rounded-2xl p-4">
