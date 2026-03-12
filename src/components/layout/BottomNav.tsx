@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSession } from 'next-auth/react';
+import { useEffect, useState } from 'react';
 
 const tabs = [
   {
@@ -33,6 +34,7 @@ const tabs = [
   {
     href: '/community',
     label: 'Communauté',
+    badge: true,
     icon: (active: boolean) => (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active ? 2.2 : 1.8} strokeLinecap="round" strokeLinejoin="round">
         <circle cx="8" cy="12" r="3" />
@@ -58,17 +60,36 @@ const tabs = [
 export function BottomNav() {
   const pathname = usePathname();
   const { data: session, status } = useSession();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    if (!session?.user?.id) return;
+
+    function fetchUnread() {
+      fetch('/api/social/messages/unread')
+        .then((r) => r.json())
+        .then((data: { count?: number }) => {
+          if (typeof data.count === 'number') setUnreadCount(data.count);
+        })
+        .catch(() => {});
+    }
+
+    fetchUnread();
+    const interval = setInterval(fetchUnread, 15000);
+    return () => clearInterval(interval);
+  }, [session?.user?.id]);
 
   if (status === 'loading') return null;
 
-  // Hide nav for unauthenticated pages, share pages, and public profile pages
   const isPublicProfilePage = /^\/profile\/[^/]+/.test(pathname);
+  const isChatPage = /^\/messages\/.+/.test(pathname);
   if (
     !session ||
     pathname === '/login' ||
     pathname === '/signup' ||
     pathname.startsWith('/share/') ||
-    isPublicProfilePage
+    isPublicProfilePage ||
+    isChatPage
   ) return null;
 
   return (
@@ -77,33 +98,33 @@ export function BottomNav() {
         <div className="flex items-center justify-around max-w-lg mx-auto">
           {tabs.map((tab) => {
             const isActive = pathname.startsWith(tab.href);
+            const showBadge = tab.badge && unreadCount > 0 && !isActive;
             return (
               <Link
                 key={tab.href}
                 href={tab.href}
                 className={[
                   'flex flex-col items-center gap-1 py-3 px-2 rounded-xl transition-all duration-200 min-w-[52px]',
-                  isActive
-                    ? 'text-[#7C3AED]'
-                    : 'text-[#6B6B8A] hover:text-[#A78BFA]',
+                  isActive ? 'text-[#7C3AED]' : 'text-[#6B6B8A] hover:text-[#A78BFA]',
                 ].join(' ')}
               >
                 <span className="relative">
                   {tab.icon(isActive)}
+                  {showBadge && (
+                    <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-[#7C3AED] text-white text-[9px] font-bold rounded-full flex items-center justify-center border-2 border-[#1A1A2E]">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  )}
                   {isActive && (
                     <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[#7C3AED]" />
                   )}
                 </span>
-                <span
-                  className="text-[10px] font-semibold tracking-wide"
-                  style={{ letterSpacing: '0.05em' }}
-                >
+                <span className="text-[10px] font-semibold tracking-wide" style={{ letterSpacing: '0.05em' }}>
                   {tab.label}
                 </span>
               </Link>
             );
           })}
-
         </div>
       </div>
     </nav>

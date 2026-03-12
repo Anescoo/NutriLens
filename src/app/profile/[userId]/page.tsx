@@ -63,6 +63,8 @@ export default function PublicProfilePage({ params }: { params: Promise<{ userId
   const [followLoading, setFollowLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [plans, setPlans] = useState<UserPlan[]>([]);
+  const [likingId, setLikingId] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
 
   useEffect(() => {
     fetch(`/api/social/profile/${userId}`)
@@ -108,6 +110,26 @@ export default function PublicProfilePage({ params }: { params: Promise<{ userId
       }
     } finally {
       setFollowLoading(false);
+    }
+  }
+
+  async function handleLike(plan: UserPlan) {
+    if (!session || likingId) return;
+    setLikingId(plan.id);
+    try {
+      const method = plan.isLiked ? 'DELETE' : 'POST';
+      const res = await fetch(`/api/workout/plans/${plan.id}/like`, { method });
+      if (res.ok) {
+        const data = await res.json() as { likesCount: number; liked: boolean };
+        setPlans((prev) => prev.map((p) => p.id === plan.id ? { ...p, likesCount: data.likesCount, isLiked: data.liked } : p));
+        if (!plan.isLiked) {
+          const authorName = profile?.name ?? 'cet utilisateur';
+          setToast(`Programme de ${authorName} liké !`);
+          setTimeout(() => setToast(null), 3000);
+        }
+      }
+    } finally {
+      setLikingId(null);
     }
   }
 
@@ -172,20 +194,31 @@ export default function PublicProfilePage({ params }: { params: Promise<{ userId
               </div>
             </div>
 
-            {/* Follow button */}
+            {/* Follow + Message buttons */}
             {session && !isOwnProfile && (
-              <button
-                onClick={handleFollow}
-                disabled={followLoading}
-                className={[
-                  'mt-4 w-full py-2.5 rounded-xl text-sm font-semibold transition-all',
-                  profile.isFollowing
-                    ? 'border border-[#7C3AED] text-[#7C3AED] hover:bg-[#7C3AED]/10'
-                    : 'bg-[#7C3AED] text-white hover:bg-[#6D28D9]',
-                ].join(' ')}
-              >
-                {followLoading ? 'Chargement…' : profile.isFollowing ? 'Ne plus suivre' : 'Suivre'}
-              </button>
+              <div className="mt-4 flex gap-2">
+                <button
+                  onClick={handleFollow}
+                  disabled={followLoading}
+                  className={[
+                    'flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all',
+                    profile.isFollowing
+                      ? 'border border-[#7C3AED] text-[#7C3AED] hover:bg-[#7C3AED]/10'
+                      : 'bg-[#7C3AED] text-white hover:bg-[#6D28D9]',
+                  ].join(' ')}
+                >
+                  {followLoading ? 'Chargement…' : profile.isFollowing ? 'Ne plus suivre' : 'Suivre'}
+                </button>
+                <button
+                  onClick={() => router.push(`/messages/${profile.id}`)}
+                  className="px-4 py-2.5 rounded-xl text-sm font-semibold border border-[#2d1f5e] text-[#A78BFA] hover:bg-[#2d1f5e]/40 transition-all flex items-center gap-2"
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                  </svg>
+                  Message
+                </button>
+              </div>
             )}
           </div>
 
@@ -266,6 +299,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ userId
               <div className="flex flex-col gap-3">
                 {plans.map((plan) => {
                   const totalExercises = plan.sessions.reduce((s, sess) => s + sess.exercises.length, 0);
+                  const isAnimating = likingId === plan.id;
                   return (
                     <div key={plan.id} className="bg-[#1A1A2E] border border-[#2d1f5e] rounded-2xl p-4">
                       <p className="text-white font-bold text-base truncate mb-0.5">{plan.name}</p>
@@ -279,12 +313,26 @@ export default function PublicProfilePage({ params }: { params: Promise<{ userId
                           </span>
                         ))}
                       </div>
-                      <div className="flex items-center gap-1.5 text-xs text-[#6B6B8A]">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill={plan.isLiked ? '#A78BFA' : 'none'} stroke={plan.isLiked ? '#A78BFA' : 'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <button
+                        onClick={() => handleLike(plan)}
+                        disabled={!session || isOwnProfile || !!likingId}
+                        className="flex items-center gap-1.5 text-xs text-[#6B6B8A] hover:text-[#A78BFA] transition-colors disabled:cursor-default group"
+                      >
+                        <svg
+                          width="14" height="14" viewBox="0 0 24 24"
+                          fill={plan.isLiked ? '#A78BFA' : 'none'}
+                          stroke={plan.isLiked ? '#A78BFA' : 'currentColor'}
+                          strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                          className={[
+                            'transition-transform duration-150',
+                            isAnimating ? 'scale-150' : 'scale-100',
+                            !isOwnProfile && session ? 'group-hover:scale-125' : '',
+                          ].join(' ')}
+                        >
                           <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
                         </svg>
-                        {plan.likesCount} j&apos;aime
-                      </div>
+                        <span className={plan.isLiked ? 'text-[#A78BFA]' : ''}>{plan.likesCount} j&apos;aime</span>
+                      </button>
                     </div>
                   );
                 })}
@@ -305,6 +353,16 @@ export default function PublicProfilePage({ params }: { params: Promise<{ userId
           )}
         </>
       ) : null}
+
+      {/* Toast */}
+      {toast && (
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 bg-[#1A1A2E] border border-[#7C3AED]/60 text-white text-sm font-medium px-4 py-2.5 rounded-2xl shadow-lg flex items-center gap-2 animate-fade-in-up">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="#A78BFA" stroke="#A78BFA" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+          </svg>
+          {toast}
+        </div>
+      )}
     </main>
   );
 }

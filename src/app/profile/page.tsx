@@ -72,6 +72,19 @@ export default function ProfilePage() {
   const [streaks, setStreaks] = useState({ nutritionStreak: 0, workoutStreak: 0 });
   const [workoutFrequency, setWorkoutFrequency] = useState(3);
 
+  // Liked plans
+  interface LikedPlan {
+    id: string;
+    name: string;
+    sessions: { id: string; name: string; exercises: unknown[] }[];
+    authorId: string;
+    authorName: string | null;
+    likesCount: number;
+  }
+  const [likedPlans, setLikedPlans] = useState<LikedPlan[]>([]);
+  const [addingPlanId, setAddingPlanId] = useState<string | null>(null);
+  const [addedPlanIds, setAddedPlanIds] = useState<Set<string>>(new Set());
+
   // Social profile state
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [editingBio, setEditingBio] = useState(false);
@@ -87,7 +100,8 @@ export default function ProfilePage() {
       fetch('/api/meals').then((r) => r.json()),
       fetch('/api/profile').then((r) => r.json()),
       fetch('/api/streaks').then((r) => r.ok ? r.json() : { nutritionStreak: 0, workoutStreak: 0 }),
-    ]).then(([body, mealData, profile, streakData]) => {
+      fetch('/api/workout/plans/liked').then((r) => r.ok ? r.json() : []),
+    ]).then(([body, mealData, profile, streakData, liked]) => {
       setMeasurements(Array.isArray(body) ? body : []);
       setMeals(Array.isArray(mealData) ? mealData : []);
       if (profile && !profile.error) {
@@ -97,6 +111,7 @@ export default function ProfilePage() {
       const sd = streakData as { nutritionStreak: number; workoutStreak: number; workoutFrequency?: number };
       setStreaks({ nutritionStreak: sd.nutritionStreak, workoutStreak: sd.workoutStreak });
       if (sd.workoutFrequency) setWorkoutFrequency(sd.workoutFrequency);
+      if (Array.isArray(liked)) setLikedPlans(liked as LikedPlan[]);
       setLoading(false);
     }).catch(() => setLoading(false));
   }, []);
@@ -168,6 +183,21 @@ export default function ProfilePage() {
       body: JSON.stringify({ bio: bioValue }),
     });
     setProfileData((prev) => prev ? { ...prev, bio: bioValue } : prev);
+  }
+
+  async function handleAddLikedPlan(plan: LikedPlan) {
+    if (addingPlanId || addedPlanIds.has(plan.id)) return;
+    setAddingPlanId(plan.id);
+    try {
+      const res = await fetch('/api/workout/plans', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: `${plan.name} (Copie)`, sessions: plan.sessions, isPublic: false }),
+      });
+      if (res.ok) setAddedPlanIds((prev) => new Set(prev).add(plan.id));
+    } finally {
+      setAddingPlanId(null);
+    }
   }
 
   async function handlePublicToggle(val: boolean) {
@@ -448,6 +478,47 @@ export default function ProfilePage() {
           ))}
         </div>
       </div>
+
+      {/* Liked plans */}
+      {likedPlans.length > 0 && (
+        <div className="bg-[#1A1A2E] border border-[#2d1f5e] rounded-2xl p-4 mb-4">
+          <SectionTitle>Programmes likés</SectionTitle>
+          <div className="flex flex-col gap-3">
+            {likedPlans.map((plan) => {
+              const totalExercises = plan.sessions.reduce((s, sess) => s + sess.exercises.length, 0);
+              const isAdded = addedPlanIds.has(plan.id);
+              const isAdding = addingPlanId === plan.id;
+              return (
+                <div key={plan.id} className="bg-[#0F0F1A] rounded-2xl p-3 border border-[#2d1f5e]">
+                  <p className="text-white font-semibold text-sm truncate mb-0.5">{plan.name}</p>
+                  <p className="text-[#6B6B8A] text-xs mb-2">
+                    par {plan.authorName ?? 'Inconnu'} · {plan.sessions.length} séance{plan.sessions.length > 1 ? 's' : ''} · {totalExercises} exercice{totalExercises > 1 ? 's' : ''}
+                  </p>
+                  <div className="flex flex-wrap gap-1 mb-3">
+                    {plan.sessions.map((s) => (
+                      <span key={s.id} className="text-[10px] bg-[#1A1A2E] text-[#A78BFA] px-2 py-0.5 rounded-full border border-[#2d1f5e]">
+                        {s.name}
+                      </span>
+                    ))}
+                  </div>
+                  <button
+                    onClick={() => handleAddLikedPlan(plan)}
+                    disabled={isAdding || isAdded}
+                    className={[
+                      'w-full py-2 rounded-xl text-xs font-semibold transition-all',
+                      isAdded
+                        ? 'bg-[#10b981]/20 text-[#10b981] border border-[#10b981]/30'
+                        : 'bg-[#7C3AED]/20 text-[#A78BFA] border border-[#7C3AED]/40 hover:bg-[#7C3AED]/30',
+                    ].join(' ')}
+                  >
+                    {isAdding ? 'Ajout…' : isAdded ? '✓ Ajouté à mes programmes' : '+ Ajouter à mes programmes'}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Export */}
       <ExportSection />
