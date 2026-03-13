@@ -380,7 +380,7 @@ export default function GoalsPage() {
   ];
 
   return (
-    <main className="px-4 pt-6 pb-28 max-w-lg mx-auto">
+    <main className="px-4 pt-6 pb-28 md:pb-10 md:pt-20 max-w-lg md:max-w-3xl mx-auto">
       <PageHeader title="Objectifs" subtitle="Définis tes cibles nutritionnelles" />
 
       <MifflinCalculator

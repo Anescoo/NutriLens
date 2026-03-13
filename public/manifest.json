@@ -3,7 +3,7 @@
   "short_name": "NutriLens",
   "description": "See your food. Know your macros. AI-powered nutrition tracking.",
   "theme_color": "#7C3AED",
-  "background_color": "#0F0F1A",
+  "background_color": "#08080F",
   "display": "standalone",
   "display_override": ["window-controls-overlay", "standalone"],
   "orientation": "portrait-primary",

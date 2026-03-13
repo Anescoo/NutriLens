@@ -9,8 +9,9 @@ export default auth((req) => {
   const { pathname } = req.nextUrl;
 
   // Public paths that don't require auth
-  const publicPaths = ['/login', '/signup'];
-  if (publicPaths.includes(pathname)) {
+  const publicPaths = ['/login', '/signup', '/forgot-password'];
+  const isPublic = publicPaths.includes(pathname) || pathname.startsWith('/reset-password/');
+  if (isPublic) {
     if (isLoggedIn) {
       return NextResponse.redirect(new URL('/', req.url));
     }

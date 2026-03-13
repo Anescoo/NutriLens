@@ -1,17 +1,17 @@
 @import "tailwindcss";
 
 @theme inline {
-  --color-background: #0F0F1A;
-  --color-foreground: #f1f0ff;
-  --color-card: #1A1A2E;
-  --color-card-border: #2d1f5e;
+  --color-background: #08080F;
+  --color-foreground: #EDE8FF;
+  --color-card: #101020;
+  --color-card-border: #1A1A32;
   --color-primary: #7C3AED;
   --color-primary-hover: #6D28D9;
-  --color-accent: #A78BFA;
-  --color-muted: #6B6B8A;
-  --color-success: #10B981;
-  --color-warning: #F59E0B;
-  --color-danger: #EF4444;
+  --color-accent: #9D80FF;
+  --color-muted: #52507A;
+  --color-success: #0ED4A0;
+  --color-warning: #F5A520;
+  --color-danger: #F04E6E;
   --font-sans: var(--font-geist-sans), system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), monospace;
 }
@@ -21,8 +21,8 @@
 }
 
 html {
-  background: #0F0F1A;
-  color: #f1f0ff;
+  background: #08080F;
+  color: #EDE8FF;
 }
 
 body {
@@ -31,6 +31,7 @@ body {
   font-family: var(--font-sans);
   min-height: 100dvh;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
 }
 
@@ -40,25 +41,21 @@ body {
   padding-bottom: env(safe-area-inset-bottom);
 }
 
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 4px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: #7C3AED44;
-  border-radius: 4px;
-}
+/* ── Scrollbar ───────────────────────────────────────────────────── */
+::-webkit-scrollbar        { width: 3px; height: 3px; }
+::-webkit-scrollbar-track  { background: transparent; }
+::-webkit-scrollbar-thumb  { background: rgba(124,58,237,0.25); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(124,58,237,0.45); }
+.scrollbar-none            { scrollbar-width: none; }
+.scrollbar-none::-webkit-scrollbar { display: none; }
 
-/* Range input styling */
+/* ── Range input ─────────────────────────────────────────────────── */
 input[type="range"] {
   -webkit-appearance: none;
   appearance: none;
   height: 6px;
   border-radius: 3px;
-  background: #2d1f5e;
+  background: #1A1A32;
   outline: none;
 }
 input[type="range"]::-webkit-slider-thumb {
@@ -69,7 +66,12 @@ input[type="range"]::-webkit-slider-thumb {
   border-radius: 50%;
   background: #7C3AED;
   cursor: pointer;
-  border: 2px solid #A78BFA;
+  border: 2px solid #9D80FF;
+  box-shadow: 0 0 8px rgba(124, 58, 237, 0.5);
+  transition: box-shadow 0.15s;
+}
+input[type="range"]::-webkit-slider-thumb:active {
+  box-shadow: 0 0 16px rgba(124, 58, 237, 0.8);
 }
 input[type="range"]::-moz-range-thumb {
   width: 18px;
@@ -77,31 +79,111 @@ input[type="range"]::-moz-range-thumb {
   border-radius: 50%;
   background: #7C3AED;
   cursor: pointer;
-  border: 2px solid #A78BFA;
+  border: 2px solid #9D80FF;
 }
 
-/* Time input - make clock icon visible on dark background */
+/* ── Time input ──────────────────────────────────────────────────── */
 input[type="time"]::-webkit-calendar-picker-indicator {
   filter: invert(0.7) brightness(1.5);
   cursor: pointer;
   opacity: 0.8;
 }
 
+/* ── Number input ────────────────────────────────────────────────── */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+/* ── Interactive elements ────────────────────────────────────────── */
+button, a, [role="button"] {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   KEYFRAMES
+═══════════════════════════════════════════════════════════════════ */
+
+/* Entrance */
+@keyframes slide-in-up {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+@keyframes slide-in-down {
+  from { opacity: 0; transform: translateY(-12px); }
+  to   { opacity: 1; transform: translateY(0);     }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.94); }
+  to   { opacity: 1; transform: scale(1);    }
+}
+@keyframes scale-in-bounce {
+  0%   { opacity: 0;  transform: scale(0.82); }
+  65%  { opacity: 1;  transform: scale(1.04); }
+  100% { opacity: 1;  transform: scale(1);    }
+}
+
+/* Glow */
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(124, 58, 237, 0); }
+  50%       { box-shadow: 0 0 24px 6px rgba(124, 58, 237, 0.22); }
+}
+
+/* Skeleton shimmer */
+@keyframes shimmer {
+  0%   { background-position: -600px 0; }
+  100% { background-position:  600px 0; }
+}
+
+/* Floating */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-4px); }
+}
+
+/* Number pop */
+@keyframes number-pop {
+  0%   { transform: scale(0.75); opacity: 0; }
+  70%  { transform: scale(1.08); }
+  100% { transform: scale(1);    opacity: 1; }
+}
+
+/* Tab indicator spread */
+@keyframes indicator-spread {
+  from { transform: scaleX(0.3); opacity: 0; }
+  to   { transform: scaleX(1);   opacity: 1; }
+}
+
+/* Toast */
+@keyframes fade-in-up {
+  0%   { opacity: 0; transform: translateX(-50%) translateY(10px); }
+  100% { opacity: 1; transform: translateX(-50%) translateY(0);    }
+}
+
 /* ── Streak flame animations ─────────────────────────────────────── */
 @keyframes flame-flicker {
-  0%, 100% { transform: rotate(-2deg) scaleY(1)    scaleX(1);    }
-  20%       { transform: rotate(2deg)  scaleY(1.06) scaleX(0.96); }
-  40%       { transform: rotate(-1deg) scaleY(0.97) scaleX(1.02); }
+  0%, 100% { transform: rotate(-2deg)  scaleY(1)    scaleX(1);    }
+  20%       { transform: rotate(2deg)   scaleY(1.06) scaleX(0.96); }
+  40%       { transform: rotate(-1deg)  scaleY(0.97) scaleX(1.02); }
   60%       { transform: rotate(2.5deg) scaleY(1.07) scaleX(0.95); }
-  80%       { transform: rotate(-1.5deg) scaleY(1.02) scaleX(0.99); }
+  80%       { transform: rotate(-1.5deg)scaleY(1.02) scaleX(0.99); }
 }
 @keyframes flame-glow-pulse {
   0%, 100% { opacity: 0.6; }
   50%       { opacity: 1;   }
 }
 @keyframes flame-rise {
-  0%, 100% { transform: translateY(0px);   }
-  50%       { transform: translateY(-3px);  }
+  0%, 100% { transform: translateY(0px);  }
+  50%       { transform: translateY(-3px); }
 }
 @keyframes streak-pop {
   0%   { transform: scale(0.7); opacity: 0; }
@@ -109,12 +191,12 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   100% { transform: scale(1);   opacity: 1; }
 }
 @keyframes flame-spark {
-  0%, 100% { opacity: 0; transform: translateY(0)   scale(1);   }
-  30%       { opacity: 1; transform: translateY(-8px) scale(1.2); }
+  0%, 100% { opacity: 0; transform: translateY(0)    scale(1);   }
+  30%       { opacity: 1; transform: translateY(-8px)  scale(1.2); }
   60%       { opacity: 0; transform: translateY(-14px) scale(0.6); }
 }
 
-/* ── Streak celebration overlay ──────────────────────────────────── */
+/* ── Celebration overlay ─────────────────────────────────────────── */
 @keyframes celebration-in {
   0%   { opacity: 0; transform: scale(0.88); }
   100% { opacity: 1; transform: scale(1);    }
@@ -124,21 +206,67 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   100% { opacity: 0; transform: scale(1.06); }
 }
 
-@keyframes fade-in-up {
-  0%   { opacity: 0; transform: translateX(-50%) translateY(8px); }
-  100% { opacity: 1; transform: translateX(-50%) translateY(0);   }
-}
-.animate-fade-in-up {
-  animation: fade-in-up 0.2s ease-out both;
+/* ═══════════════════════════════════════════════════════════════════
+   UTILITY CLASSES
+═══════════════════════════════════════════════════════════════════ */
+
+/* Animation classes */
+.animate-slide-in-up     { animation: slide-in-up     0.38s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.animate-slide-in-down   { animation: slide-in-down   0.3s  cubic-bezier(0.16, 1, 0.3, 1) both; }
+.animate-fade-in         { animation: fade-in         0.25s ease-out both; }
+.animate-scale-in        { animation: scale-in        0.28s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.animate-scale-in-bounce { animation: scale-in-bounce 0.4s  cubic-bezier(0.16, 1, 0.3, 1) both; }
+.animate-float           { animation: float           3.5s  ease-in-out infinite; }
+.animate-glow-pulse      { animation: glow-pulse      2.4s  ease-in-out infinite; }
+.animate-number-pop      { animation: number-pop      0.4s  cubic-bezier(0.16, 1, 0.3, 1) both; }
+.animate-fade-in-up      { animation: fade-in-up      0.22s ease-out both; }
+
+/* Stagger delays for list animations */
+.stagger-0  { animation-delay:   0ms; }
+.stagger-1  { animation-delay:  50ms; }
+.stagger-2  { animation-delay: 100ms; }
+.stagger-3  { animation-delay: 150ms; }
+.stagger-4  { animation-delay: 200ms; }
+.stagger-5  { animation-delay: 250ms; }
+.stagger-6  { animation-delay: 300ms; }
+
+/* Skeleton shimmer */
+.skeleton {
+  background: linear-gradient(90deg, #101020 0%, #1A1A30 50%, #101020 100%);
+  background-size: 600px 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
 }
 
-/* Number input - hide arrows */
-input[type="number"]::-webkit-inner-spin-button,
-input[type="number"]::-webkit-outer-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
+/* Press feedback — apply to interactive cards/buttons */
+.press {
+  transition: transform 0.12s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.12s cubic-bezier(0.16, 1, 0.3, 1);
 }
-input[type="number"] {
-  -moz-appearance: textfield;
-  appearance: textfield;
+.press:active { transform: scale(0.97); }
+
+/* Lift on hover */
+.lift {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(124, 58, 237, 0.12);
+}
+
+/* Glow utilities */
+.glow-sm  { box-shadow: 0 0 12px rgba(124, 58, 237, 0.25); }
+.glow-md  { box-shadow: 0 0 24px rgba(124, 58, 237, 0.3);  }
+.glow-lg  { box-shadow: 0 0 40px rgba(124, 58, 237, 0.35); }
+
+/* Inner card shadow for depth */
+.inset-shadow {
+  box-shadow: inset 0 1px 0 rgba(157, 128, 255, 0.06),
+              inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+}
+
+/* Tab indicator animation */
+.tab-indicator {
+  animation: indicator-spread 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
+  transform-origin: center;
 }

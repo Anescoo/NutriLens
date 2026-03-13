@@ -155,7 +155,7 @@ export default function ProgressionPage() {
 
   return (
     <main className="min-h-screen bg-[#0F0F1A] pb-32 pt-6 px-4">
-      <div className="max-w-lg mx-auto">
+      <div className="max-w-lg md:max-w-3xl mx-auto">
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
           <Link

@@ -140,7 +140,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ userId
   const stats = profile?.stats ?? null;
 
   return (
-    <main className="px-4 pt-6 pb-28 max-w-lg mx-auto">
+    <main className="px-4 pt-6 pb-28 md:pb-10 md:pt-20 max-w-lg md:max-w-3xl mx-auto">
       {/* Back button */}
       <div className="flex items-center gap-3 mb-6">
         <button

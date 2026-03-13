@@ -153,7 +153,7 @@ function PlanDetail({ meta, onClose }: { meta: PlanMeta; onClose: () => void }) 
 
   return (
     <div className="fixed inset-0 z-[60] bg-black/60" onClick={onClose}>
-      <div className="absolute bottom-0 left-0 right-0 max-w-lg mx-auto bg-[#1A1A2E] border-t border-[#2d1f5e] rounded-t-3xl max-h-[80vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+      <div className="absolute bottom-0 left-0 right-0 max-w-lg md:max-w-3xl mx-auto bg-[#1A1A2E] border-t border-[#2d1f5e] rounded-t-3xl max-h-[80vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-[#2d1f5e] shrink-0">
           <div>
             <p className="text-[10px] font-bold uppercase tracking-widest text-[#A78BFA] mb-0.5">Programme</p>
@@ -199,7 +199,7 @@ function PlanDetail({ meta, onClose }: { meta: PlanMeta; onClose: () => void }) 
 function SessionDetail({ meta, onClose }: { meta: SessionMeta; onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-[60] bg-black/60" onClick={onClose}>
-      <div className="absolute bottom-0 left-0 right-0 max-w-lg mx-auto bg-[#1A1A2E] border-t border-[#2d1f5e] rounded-t-3xl max-h-[80vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+      <div className="absolute bottom-0 left-0 right-0 max-w-lg md:max-w-3xl mx-auto bg-[#1A1A2E] border-t border-[#2d1f5e] rounded-t-3xl max-h-[80vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-[#2d1f5e] shrink-0">
           <div>
             <p className="text-[10px] font-bold uppercase tracking-widest text-[#A78BFA] mb-0.5">Séance</p>
@@ -352,7 +352,7 @@ function PlanPicker({ onConfirm, onClose }: { onConfirm: (plans: WorkoutPlan[]) 
 
   return (
     <div className="fixed inset-0 z-50 bg-black/40" onClick={onClose}>
-      <div className="absolute bottom-0 left-0 right-0 max-w-lg mx-auto bg-[#1A1A2E] border-t border-[#2d1f5e] rounded-t-3xl max-h-[60vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+      <div className="absolute bottom-0 left-0 right-0 max-w-lg md:max-w-3xl mx-auto bg-[#1A1A2E] border-t border-[#2d1f5e] rounded-t-3xl max-h-[60vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-[#2d1f5e] shrink-0">
           <p className="text-white font-bold text-sm">Programmes</p>
           <button onClick={onClose} className="w-7 h-7 rounded-full bg-[#0F0F1A] flex items-center justify-center text-[#6B6B8A]">
@@ -431,7 +431,7 @@ function SessionPicker({ onConfirm, onClose }: { onConfirm: (sessions: WorkoutSe
 
   return (
     <div className="fixed inset-0 z-50 bg-black/40" onClick={onClose}>
-      <div className="absolute bottom-0 left-0 right-0 max-w-lg mx-auto bg-[#1A1A2E] border-t border-[#2d1f5e] rounded-t-3xl max-h-[60vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+      <div className="absolute bottom-0 left-0 right-0 max-w-lg md:max-w-3xl mx-auto bg-[#1A1A2E] border-t border-[#2d1f5e] rounded-t-3xl max-h-[60vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-[#2d1f5e] shrink-0">
           <p className="text-white font-bold text-sm">Séances</p>
           <button onClick={onClose} className="w-7 h-7 rounded-full bg-[#0F0F1A] flex items-center justify-center text-[#6B6B8A]">
@@ -665,7 +665,7 @@ export default function ChatPage({ params }: { params: Promise<{ userId: string 
   const imageUrls = messages.filter(m => m.type === 'image').map(m => (parseMeta(m.metadata) as ImageMeta).imageUrl);
 
   return (
-    <div className="flex flex-col h-[100dvh] max-w-lg mx-auto bg-[#0F0F1A]">
+    <div className="flex flex-col h-[100dvh] max-w-lg md:max-w-3xl mx-auto bg-[#0F0F1A] md:border-x md:border-[#1A1A32]">
       {/* Camera input: capture forces camera, no multiple */}
       <input
         ref={cameraInputRef}

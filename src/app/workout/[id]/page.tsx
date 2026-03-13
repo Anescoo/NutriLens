@@ -422,7 +422,7 @@ export default function WorkoutSessionPage() {
     <main className="min-h-screen bg-[#0F0F1A] pb-32">
       {/* Sticky header */}
       <div className="sticky top-0 z-20 bg-[#0F0F1A]/90 backdrop-blur border-b border-[#2d1f5e]">
-        <div className="max-w-lg mx-auto px-4 py-3">
+        <div className="max-w-lg md:max-w-3xl mx-auto px-4 py-3">
           <div className="flex items-center gap-3">
             <button
               onClick={() => router.push('/workout')}
@@ -477,7 +477,7 @@ export default function WorkoutSessionPage() {
         </div>
       </div>
 
-      <div className="max-w-lg mx-auto px-4 pt-4 flex flex-col gap-4">
+      <div className="max-w-lg md:max-w-3xl mx-auto px-4 pt-4 flex flex-col gap-4">
         {exerciseGroups.map((group) => (
           <div key={group[0].id} className="flex flex-col gap-2">
             {group.map((ex) => {

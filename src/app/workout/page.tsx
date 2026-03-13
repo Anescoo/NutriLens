@@ -225,7 +225,7 @@ function PlanEditor({ initial, existingPlans, onSave, onCancel }: PlanEditorProp
       </div>
 
       {/* Scrollable content */}
-      <div className="flex-1 overflow-y-auto px-4 pt-4 pb-6 max-w-lg w-full mx-auto">
+      <div className="flex-1 overflow-y-auto px-4 pt-4 pb-6 max-w-lg md:max-w-3xl w-full mx-auto">
         {/* Plan name */}
         <input
           type="text"
@@ -407,7 +407,7 @@ function PlanEditor({ initial, existingPlans, onSave, onCancel }: PlanEditorProp
       </div>
 
       {/* Sticky save button */}
-      <div className="px-4 py-3 border-t border-[#2d1f5e] shrink-0 max-w-lg w-full mx-auto">
+      <div className="px-4 py-3 border-t border-[#2d1f5e] shrink-0 max-w-lg md:max-w-3xl w-full mx-auto">
         {/* Public toggle */}
         <button
           type="button"
@@ -744,7 +744,7 @@ export default function WorkoutPage() {
       )}
 
       <main className="min-h-screen bg-[#0F0F1A] pb-32 pt-6 px-4">
-        <div className="max-w-lg mx-auto">
+        <div className="max-w-lg md:max-w-3xl mx-auto">
           {/* Header */}
           <div className="flex items-start justify-between gap-3 mb-5">
             <div className="min-w-0">

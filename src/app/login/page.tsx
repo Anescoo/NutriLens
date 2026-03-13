@@ -80,7 +80,13 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <p className="text-center text-sm text-[#6B6B8A] mt-4">
+        <div className="text-center pt-3">
+          <Link href="/forgot-password" className="text-xs text-[#6B6B8A] hover:text-[#A78BFA] transition-colors">
+            Mot de passe oublié ?
+          </Link>
+        </div>
+
+        <p className="text-center text-sm text-[#6B6B8A] mt-3">
           Pas encore de compte ?{' '}
           <Link href="/signup" className="text-[#A78BFA] hover:text-[#7C3AED] transition-colors">
             Créer un compte

@@ -615,7 +615,7 @@ export default function NewWorkoutPage() {
     <main className="min-h-screen bg-[#0F0F1A] pb-32">
       {/* Header */}
       <div className="sticky top-0 z-20 bg-[#0F0F1A]/90 backdrop-blur border-b border-[#2d1f5e] px-4 py-3">
-        <div className="max-w-lg mx-auto flex items-center gap-3">
+        <div className="max-w-lg md:max-w-3xl mx-auto flex items-center gap-3">
           <button
             onClick={() => router.back()}
             className="text-[#6B6B8A] hover:text-white transition-colors"
@@ -628,7 +628,7 @@ export default function NewWorkoutPage() {
         </div>
       </div>
 
-      <div className="max-w-lg mx-auto px-4 pt-5">
+      <div className="max-w-lg md:max-w-3xl mx-auto px-4 pt-5">
         {/* Session name */}
         <input
           value={name}
