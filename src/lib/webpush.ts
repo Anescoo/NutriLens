@@ -1,25 +1,28 @@
 import webpush from 'web-push';
 
-if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
-  console.warn('[webpush] VAPID keys not set — push notifications disabled.');
-} else {
-  webpush.setVapidDetails(
-    `mailto:${process.env.VAPID_EMAIL ?? 'nutrilens@example.com'}`,
-    process.env.VAPID_PUBLIC_KEY,
-    process.env.VAPID_PRIVATE_KEY,
-  );
-}
-
 export interface PushPayload {
   title: string;
   body: string;
   url?: string;
 }
 
+function initWebPush() {
+  const pub = process.env.VAPID_PUBLIC_KEY?.trim();
+  const priv = process.env.VAPID_PRIVATE_KEY?.trim();
+  const email = process.env.VAPID_EMAIL?.trim() ?? 'nutrilens@example.com';
+
+  if (!pub || !priv) {
+    throw new Error('[webpush] VAPID keys not set.');
+  }
+
+  webpush.setVapidDetails(`mailto:${email}`, pub, priv);
+}
+
 export async function sendPush(
   subscription: { endpoint: string; p256dh: string; auth: string },
   payload: PushPayload,
 ): Promise<void> {
+  initWebPush();
   await webpush.sendNotification(
     {
       endpoint: subscription.endpoint,

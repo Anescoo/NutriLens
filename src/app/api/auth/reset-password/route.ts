@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
   }
 
   const rows = await prisma.$queryRaw<TokenRow[]>`
-    SELECT id, userId, expiresAt, used FROM "PasswordResetToken" WHERE token = ${token} LIMIT 1
+    SELECT id, "userId", "expiresAt", used FROM "PasswordResetToken" WHERE token = ${token} LIMIT 1
   `;
   const record = rows[0];
 
@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
   });
 
   await prisma.$executeRaw`
-    UPDATE "PasswordResetToken" SET used = 1 WHERE token = ${token}
+    UPDATE "PasswordResetToken" SET used = true WHERE token = ${token}
   `;
 
   return NextResponse.json({ success: true });

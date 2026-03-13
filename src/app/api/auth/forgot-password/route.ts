@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
 
   // Invalidate any existing unused tokens for this user (raw SQL)
   await prisma.$executeRaw`
-    UPDATE "PasswordResetToken" SET used = 1 WHERE userId = ${user.id} AND used = 0
+    UPDATE "PasswordResetToken" SET used = true WHERE "userId" = ${user.id} AND used = false
   `;
 
   const token = crypto.randomBytes(32).toString('hex');
@@ -27,8 +27,8 @@ export async function POST(req: NextRequest) {
   const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString(); // 1 hour
 
   await prisma.$executeRaw`
-    INSERT INTO "PasswordResetToken" (id, token, userId, expiresAt, used, createdAt)
-    VALUES (${id}, ${token}, ${user.id}, ${expiresAt}, 0, ${new Date().toISOString()})
+    INSERT INTO "PasswordResetToken" (id, token, "userId", "expiresAt", used, "createdAt")
+    VALUES (${id}, ${token}, ${user.id}, ${new Date(expiresAt)}, false, ${new Date()})
   `;
 
   const host = req.headers.get('host') ?? 'localhost:3000';

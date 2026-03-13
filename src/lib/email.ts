@@ -15,7 +15,7 @@ export async function sendPasswordResetEmail(to: string, resetUrl: string): Prom
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS,
     },
-    tls: { rejectUnauthorized: false },
+    tls: { rejectUnauthorized: process.env.NODE_ENV === 'production' },
   });
 
   await transporter.sendMail({
